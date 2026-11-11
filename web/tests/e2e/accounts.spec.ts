@@ -126,10 +126,14 @@ test("admin tạo học sinh, tìm, lọc theo khối và phân trang", async ({
   await expect(row(page, BINH)).toBeVisible();
 
   await page.goto("/students");
-  await page.getByRole("link", { name: "Khối 11" }).click();
+  await page.getByLabel("Khối", { exact: true }).selectOption("11");
+  await expect(page).toHaveURL(/grade=11/);
   await expect(page.locator("tbody tr")).toHaveCount(3);
-  await page.getByRole("link", { name: "Khối 10" }).click();
+  await expect(page.getByText("3 học sinh", { exact: true })).toBeVisible();
+  await page.getByLabel("Khối", { exact: true }).selectOption("10");
   await expect(page.getByText("Chưa có học sinh")).toBeVisible();
+  await page.getByRole("button", { name: "Xoá bộ lọc" }).click();
+  await expect(page).toHaveURL(/\/students$/);
 });
 
 test("admin tạo giáo viên", async ({ page }) => {
@@ -210,7 +214,8 @@ test("giáo viên quản lý học sinh nhưng không đụng được tới gi�
   // đổi khối
   await page.goto(`/students?q=${AN2}`);
   await row(page, AN2).getByLabel("Khối của Nguyen Van An").selectOption("10");
-  await page.getByRole("link", { name: "Khối 10" }).click();
+  await page.getByLabel("Khối", { exact: true }).selectOption("10");
+  await expect(page).toHaveURL(/grade=10/);
   await expect(page.locator("tbody tr")).toHaveCount(1);
 
   // xoá: huỷ thì còn, xác nhận thì mất

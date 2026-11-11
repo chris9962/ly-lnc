@@ -3,12 +3,11 @@ import { notFound } from "next/navigation";
 import { CreateExamButton } from "@/components/exams/CreateExamButton";
 import { ExamStatusTag } from "@/components/exams/ExamStatusTag";
 import { Card } from "@/components/ui/Card";
-import { FilterTabs, hrefWith } from "@/components/ui/FilterTabs";
+import { FilterBar } from "@/components/ui/FilterBar";
 import { Pager } from "@/components/ui/Pager";
-import { SearchBox } from "@/components/ui/SearchBox";
 import { listExamsQuery } from "@/lib/examForm";
 import { formatRange } from "@/lib/format";
-import { GRADES } from "@/lib/grades";
+import { GRADE_OPTIONS } from "@/lib/grades";
 import { requirePage } from "@/lib/permissions";
 import { listExams } from "@/server/exams";
 
@@ -31,27 +30,28 @@ export default async function ExamsPage({ searchParams }: { searchParams: Promis
         <CreateExamButton defaultGrade={query.grade} />
       </div>
       <Card>
-        <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
-          <div className="flex flex-col gap-2">
-            <FilterTabs
-              label="Lọc theo trạng thái"
-              items={[
-                { href: hrefWith(PATH, params, { status: undefined }), label: "Tất cả", active: query.status === "all" },
-                { href: hrefWith(PATH, params, { status: "running" }), label: "Đang diễn ra", active: query.status === "running" },
-                { href: hrefWith(PATH, params, { status: "upcoming" }), label: "Sắp diễn ra", active: query.status === "upcoming" },
-                { href: hrefWith(PATH, params, { status: "ended" }), label: "Đã kết thúc", active: query.status === "ended" },
-              ]}
-            />
-            <FilterTabs
-              label="Lọc theo khối"
-              items={[
-                { href: hrefWith(PATH, params, { grade: undefined }), label: "Mọi khối", active: !query.grade },
-                ...GRADES.map((grade) => ({ href: hrefWith(PATH, params, { grade }), label: `Khối ${grade}`, active: query.grade === grade })),
-              ]}
-            />
-          </div>
-          <SearchBox path={PATH} label="Tìm kỳ thi" value={query.q} keep={{ grade: params.grade?.toString(), status: params.status }} />
-        </div>
+        <FilterBar
+          path={PATH}
+          searchLabel="Tìm kỳ thi theo tên"
+          q={query.q}
+          total={list.total}
+          unit="kỳ thi"
+          selects={[
+            {
+              name: "status",
+              label: "Trạng thái",
+              base: "all",
+              options: [
+                { value: "all", label: "Mọi trạng thái" },
+                { value: "running", label: "Đang diễn ra" },
+                { value: "upcoming", label: "Sắp diễn ra" },
+                { value: "ended", label: "Đã kết thúc" },
+              ],
+            },
+            { name: "grade", label: "Khối", base: "", options: GRADE_OPTIONS },
+          ]}
+          values={{ status: query.status, grade: query.grade?.toString() ?? "" }}
+        />
         {list.rows.length ? (
           <div className="overflow-x-auto">
             <table className="w-full min-w-[40rem] border-collapse text-left">

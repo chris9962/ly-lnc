@@ -143,6 +143,14 @@ test("tạo kỳ thi thi ngay cho khối 12", async ({ browser }) => {
   await expect(page.getByRole("heading", { level: 1, name: EXAM_TITLE })).toBeVisible();
   await expect(page.getByText("Đang diễn ra").first()).toBeVisible();
   await expect(page.getByRole("row").filter({ hasText: STUDENT })).toContainText("Chưa vào thi");
+
+  await page.goto("/exams");
+  await page.getByLabel("Trạng thái").selectOption("ended");
+  await expect(page.getByText("Không có kỳ thi khớp bộ lọc")).toBeVisible();
+  await page.getByLabel("Trạng thái").selectOption("running");
+  await page.getByLabel("Khối", { exact: true }).selectOption("12");
+  await expect(page).toHaveURL(/status=running&grade=12|grade=12&status=running/);
+  await expect(page.getByRole("link", { name: EXAM_TITLE })).toBeVisible();
   await page.close();
 });
 
@@ -198,9 +206,15 @@ test("học sinh vào thi, làm bài, nộp và thấy điểm ngay", async ({ p
 test("giáo viên thấy bài đã nộp, mở lại cho học sinh và tải bảng điểm", async ({ browser }) => {
   const page = await asAdmin(browser);
   await page.goto(`/exams/${state.examId}`);
-  await expect(page.getByRole("link", { name: /Đã nộp \(1\)/ })).toBeVisible();
   const row = page.getByRole("row").filter({ hasText: STUDENT });
   await expect(row).toContainText("0,25 / 10");
+  await page.getByLabel("Trạng thái bài làm").selectOption("absent");
+  await expect(row).toHaveCount(0);
+  await page.getByLabel("Trạng thái bài làm").selectOption("submitted");
+  await expect(page).toHaveURL(/status=submitted/);
+  await expect(row).toContainText("0,25 / 10");
+  await page.getByRole("button", { name: "Xoá bộ lọc" }).click();
+  await expect(page).toHaveURL(/\/exams\/\d+$/);
 
   const download = await page.request.get(`/api/exams/${state.examId}/export`);
   expect(download.status()).toBe(200);

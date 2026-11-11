@@ -5,9 +5,8 @@ import { ExamActions } from "@/components/exams/ExamActions";
 import { ExamStatusTag } from "@/components/exams/ExamStatusTag";
 import { ReopenButton } from "@/components/exams/ReopenButton";
 import { Card } from "@/components/ui/Card";
-import { FilterTabs, hrefWith } from "@/components/ui/FilterTabs";
+import { FilterBar } from "@/components/ui/FilterBar";
 import { Pager } from "@/components/ui/Pager";
-import { SearchBox } from "@/components/ui/SearchBox";
 import { StatusTag } from "@/components/ui/StatusTag";
 import { rosterQuery } from "@/lib/examForm";
 import { formatDateTime, formatTime } from "@/lib/format";
@@ -132,18 +131,27 @@ export default async function ExamPage({ params, searchParams }: Props) {
       </div>
 
       <Card>
-        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-          <FilterTabs
-            label="Lọc theo trạng thái bài làm"
-            items={[
-              { href: hrefWith(path, params2, { status: undefined }), label: `Tất cả (${roster.rows.length})`, active: query.status === "all" },
-              { href: hrefWith(path, params2, { status: "submitted" }), label: `Đã nộp (${counts.submitted})`, active: query.status === "submitted" },
-              { href: hrefWith(path, params2, { status: "working" }), label: `Đang làm (${counts.working})`, active: query.status === "working" },
-              { href: hrefWith(path, params2, { status: "absent" }), label: `Chưa vào thi (${counts.absent})`, active: query.status === "absent" },
-            ]}
-          />
-          <SearchBox path={path} label="Tìm học sinh" value={query.q} keep={{ status: params2.status }} />
-        </div>
+        <FilterBar
+          path={path}
+          searchLabel="Tìm học sinh theo tên hoặc số điện thoại"
+          q={query.q}
+          total={filtered.length}
+          unit="học sinh"
+          selects={[
+            {
+              name: "status",
+              label: "Trạng thái bài làm",
+              base: "all",
+              options: [
+                { value: "all", label: `Mọi trạng thái (${roster.rows.length})` },
+                { value: "submitted", label: `Đã nộp (${counts.submitted})` },
+                { value: "working", label: `Đang làm (${counts.working})` },
+                { value: "absent", label: `Chưa vào thi (${counts.absent})` },
+              ],
+            },
+          ]}
+          values={{ status: query.status }}
+        />
         {rows.length ? (
           <div className="overflow-x-auto">
             <table className="w-full min-w-[40rem] border-collapse text-left">

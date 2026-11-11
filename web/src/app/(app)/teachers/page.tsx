@@ -2,8 +2,8 @@ import { notFound } from "next/navigation";
 import { AccountTable } from "@/components/accounts/AccountTable";
 import { CreateAccountsButton } from "@/components/accounts/CreateAccountsButton";
 import { Card } from "@/components/ui/Card";
+import { FilterBar } from "@/components/ui/FilterBar";
 import { Pager } from "@/components/ui/Pager";
-import { SearchBox } from "@/components/ui/SearchBox";
 import { requirePage } from "@/lib/permissions";
 import { listUsersQuery } from "@/lib/userForm";
 import { listUsers } from "@/server/users";
@@ -25,9 +25,7 @@ export default async function TeachersPage({ searchParams }: { searchParams: Pro
         <CreateAccountsButton role="teacher" label="Thêm giáo viên" />
       </div>
       <Card>
-        <div className="mb-4 flex justify-end">
-          <SearchBox path={PATH} label="Tìm giáo viên" value={query.q} />
-        </div>
+        <FilterBar path={PATH} searchLabel="Tìm giáo viên theo tên" q={query.q} total={list.total} unit="giáo viên" />
         <AccountTable accounts={list.rows} emptyLabel="Chưa có giáo viên" />
         <Pager path={PATH} params={{ q: query.q || undefined }} page={list.page} pageCount={Math.ceil(list.total / list.pageSize)} />
       </Card>

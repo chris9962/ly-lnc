@@ -5,10 +5,12 @@ import { FolderTree } from "@/components/papers/FolderTree";
 import { AnswerTag } from "@/components/papers/PaperTags";
 import { UploadPaperButton } from "@/components/papers/UploadPaperButton";
 import { Card } from "@/components/ui/Card";
-import { PaperFilters } from "@/components/papers/PaperFilters";
-import { hrefWith } from "@/components/ui/FilterTabs";
+import { FilterBar } from "@/components/ui/FilterBar";
+import { hrefWith } from "@/components/ui/hrefWith";
 import { Pager } from "@/components/ui/Pager";
+import { UPDATED_LABELS, UPDATED_PRESETS } from "@/lib/dateRange";
 import { formatDate } from "@/lib/format";
+import { GRADE_OPTIONS } from "@/lib/grades";
 import { listPapersQuery } from "@/lib/paperForm";
 import { FORMAT_NAMES } from "@/lib/paperLayout";
 import { requirePage } from "@/lib/permissions";
@@ -59,12 +61,34 @@ export default async function PapersPage({ searchParams }: { searchParams: Promi
           />
         </Card>
         <Card>
-          <PaperFilters
+          <FilterBar
             path={PATH}
+            searchLabel="Tìm đề theo tên"
             q={query.q}
-            folder={query.folder}
+            keep={{ folder: query.folder?.toString() }}
+            rangeOf="updated"
             total={list.total}
-            filters={{ grade: query.grade?.toString() ?? "", answers: query.answers, updated: query.updated ?? "", from: params.from ?? "", to: params.to ?? "" }}
+            unit="đề"
+            selects={[
+              { name: "grade", label: "Khối", base: "", options: GRADE_OPTIONS },
+              {
+                name: "answers",
+                label: "Đáp án",
+                base: "all",
+                options: [
+                  { value: "all", label: "Mọi trạng thái" },
+                  { value: "has", label: "Đủ đáp án" },
+                  { value: "none", label: "Chưa đủ đáp án" },
+                ],
+              },
+              {
+                name: "updated",
+                label: "Ngày cập nhật",
+                base: "",
+                options: [{ value: "", label: "Mọi lúc" }, ...UPDATED_PRESETS.map((preset) => ({ value: preset, label: UPDATED_LABELS[preset] }))],
+              },
+            ]}
+            values={{ grade: query.grade?.toString() ?? "", answers: query.answers, updated: query.updated ?? "", from: params.from ?? "", to: params.to ?? "" }}
           />
           {list.rows.length ? (
             <div className="overflow-x-auto">
