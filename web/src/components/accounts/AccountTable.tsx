@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { StatusTag } from "@/components/ui/StatusTag";
 import { formatDate } from "@/lib/format";
 import type { UserListItem } from "@/server/users";
@@ -11,9 +12,9 @@ function Status({ account }: { account: UserListItem }) {
 
 const cell = "px-3 py-2 align-middle";
 
-type Props = { accounts: UserListItem[]; showGrade?: boolean; emptyLabel: string; usernameLabel?: string };
+type Props = { accounts: UserListItem[]; showGrade?: boolean; emptyLabel: string; usernameLabel?: string; profilePath?: string };
 
-export function AccountTable({ accounts, showGrade, emptyLabel, usernameLabel = "Tên đăng nhập" }: Props) {
+export function AccountTable({ accounts, showGrade, emptyLabel, usernameLabel = "Tên đăng nhập", profilePath }: Props) {
   if (!accounts.length) return <p className="py-6 text-center text-muted">{emptyLabel}</p>;
   return (
     <div className="overflow-x-auto">
@@ -31,7 +32,15 @@ export function AccountTable({ accounts, showGrade, emptyLabel, usernameLabel = 
         <tbody>
           {accounts.map((account) => (
             <tr key={account.id} className="border-b border-line last:border-0">
-              <td className={cell}>{account.fullName}</td>
+              <td className={cell}>
+                {profilePath ? (
+                  <Link href={`${profilePath}/${account.id}`} className="font-semibold text-ink hover:text-brand">
+                    {account.fullName}
+                  </Link>
+                ) : (
+                  account.fullName
+                )}
+              </td>
               <td className={`${cell} font-mono`}>{account.username}</td>
               {showGrade && (
                 <td className={cell}>

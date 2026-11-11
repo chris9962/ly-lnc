@@ -46,7 +46,7 @@ export default async function StudentsPage({ searchParams }: { searchParams: Pro
           ]}
           values={{ grade: gradeParam ?? "" }}
         />
-        <AccountTable accounts={list.rows} showGrade emptyLabel="Chưa có học sinh" usernameLabel="Số điện thoại" />
+        <AccountTable accounts={list.rows} showGrade emptyLabel="Chưa có học sinh" usernameLabel="Số điện thoại" profilePath="/students" />
         <Pager path={PATH} params={{ grade: gradeParam, q: query.q || undefined }} page={list.page} pageCount={Math.ceil(list.total / list.pageSize)} />
       </Card>
     </>

@@ -258,6 +258,28 @@ test("giáo viên thấy bài đã nộp, mở lại cho học sinh và tải b�
   await student.close();
 });
 
+test("trang chi tiết học sinh hiện hoạt động theo năm", async ({ browser }) => {
+  const page = await asAdmin(browser);
+  await page.goto(`/students?q=${STUDENT}`);
+  await page.getByRole("link", { name: "Hoc Sinh Thi" }).click();
+  await page.waitForURL(/\/students\/\d+$/);
+  await expect(page.getByRole("heading", { level: 1, name: "Hoc Sinh Thi" })).toBeVisible();
+  const year = new Date().getFullYear();
+  await expect(page.getByRole("heading", { level: 2, name: `Năm ${year}` })).toBeVisible();
+  await expect(page.getByRole("group", { name: `Hoạt động năm ${year}` }).getByRole("link")).toHaveCount(1);
+  const entry = page.getByRole("listitem").filter({ hasText: EXAM_TITLE });
+  await expect(entry).toContainText("Đang làm");
+  await expect(entry.getByRole("link", { name: "Xem bài" })).toBeVisible();
+  const studentUrl = page.url();
+  await page.close();
+
+  const student = await browser.newPage();
+  await login(student, STUDENT, state.student);
+  await student.goto(studentUrl);
+  await expect(student).toHaveURL(/\/my-exams$/);
+  await student.close();
+});
+
 test("giáo viên thi thử đề và thấy đáp án ngay sau khi nộp", async ({ browser }) => {
   const page = await asAdmin(browser);
   await page.goto(`/papers/${state.paperId}`);
