@@ -12,7 +12,7 @@ import { StatusTag } from "@/components/ui/StatusTag";
 import { callApi } from "@/lib/api";
 import { FORMAT_NAMES, KIND_NAMES, LIMITS, QUESTION_KINDS, defaultShape, formatAnswer, letter, type AnswerValue, type Box, type PaperFormat, type QuestionShape } from "@/lib/paperLayout";
 import { pageUrl } from "@/lib/paperView";
-import { changeKind, keyed, kindColor, newId, numbering, ordered, paperColor, reshape, type EditorItem, type QuestionItem } from "./model";
+import { changeKind, keyed, kindColor, newId, numbering, ordered, paperColor, removeOption, reshape, type EditorItem, type QuestionItem } from "./model";
 import { EditorToolbar, TOOL_ICONS } from "./EditorToolbar";
 import { PageCanvas, type CanvasBox } from "./PageCanvas";
 
@@ -389,19 +389,15 @@ export function PaperEditor({ paperId, title, version: initialVersion, format: i
                       name={nameOf(selected)}
                       onChange={(key) => updateQuestion(selected.id, (item) => ({ ...item, key }))}
                       onEnter={() => step(1)}
+                      onAddOption={
+                        !locked && selectedShape?.kind === "mcq" && selectedShape.options < LIMITS.options[1] ? () => setShape({ ...selectedShape, options: selectedShape.options + 1 }) : undefined
+                      }
+                      onRemoveOption={
+                        !locked && selectedShape?.kind === "mcq" && selectedShape.options > LIMITS.options[0] ? (index) => updateQuestion(selected.id, (item) => removeOption(item, index)) : undefined
+                      }
                     />
-                    {selectedShape && selectedShape.kind !== "short" && !locked && (
+                    {selectedShape && (selectedShape.kind === "tf" || selectedShape.kind === "match") && !locked && (
                       <div className="mt-3 flex flex-wrap gap-1.5">
-                        {selectedShape.kind === "mcq" && (
-                          <>
-                            <Button className={small} disabled={selectedShape.options >= LIMITS.options[1]} onClick={() => setShape({ ...selectedShape, options: bounded(selectedShape.options + 1, LIMITS.options) })}>
-                              Thêm lựa chọn {letter(selectedShape.options)}
-                            </Button>
-                            <Button className={small} disabled={selectedShape.options <= LIMITS.options[0]} onClick={() => setShape({ ...selectedShape, options: bounded(selectedShape.options - 1, LIMITS.options) })}>
-                              Bớt lựa chọn
-                            </Button>
-                          </>
-                        )}
                         {selectedShape.kind === "tf" && (
                           <>
                             <Button className={small} disabled={selectedShape.items >= LIMITS.items[1]} onClick={() => setShape({ ...selectedShape, items: bounded(selectedShape.items + 1, LIMITS.items) })}>

@@ -125,6 +125,15 @@ test("đặt lại khung về kết quả cắt tự động, giữ đáp án", 
   const page = await asAdmin(browser);
   await page.goto(`/papers/${state.paperId}/edit`);
   await page.getByRole("button", { name: /^Câu 1\b/ }).first().click();
+
+  // thêm lựa chọn E rồi xoá lựa chọn A: đáp án D lùi thành C
+  const group = page.getByRole("radiogroup", { name: /Chọn đáp án Câu 1/ });
+  await page.getByRole("button", { name: "Thêm lựa chọn E" }).click();
+  await expect(group.getByRole("radio")).toHaveCount(5);
+  await page.getByRole("button", { name: "Xoá lựa chọn A" }).click();
+  await expect(group.getByRole("radio")).toHaveCount(4);
+  await expect(group.getByRole("radio", { name: "C" })).toHaveAttribute("aria-checked", "true");
+
   await page.getByRole("button", { name: "Xoá câu" }).click();
   await page.getByRole("dialog").getByRole("button", { name: "Xoá", exact: true }).click();
   await expect(page.getByText("Đáp án 27/27")).toBeVisible();

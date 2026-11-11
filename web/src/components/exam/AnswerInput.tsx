@@ -13,7 +13,13 @@ type Props = {
   disabled?: boolean;
   large?: boolean;
   onEnter?: () => void;
+  // chỉ trình chỉnh đề truyền vào: thêm một lựa chọn ở cuối, xoá lựa chọn theo vị trí
+  onAddOption?: () => void;
+  onRemoveOption?: (index: number) => void;
 };
+
+const tip =
+  "pointer-events-none invisible absolute bottom-full left-1/2 z-10 mb-1.5 w-max -translate-x-1/2 rounded-md bg-ink px-2 py-1 text-xs font-normal text-surface opacity-0 shadow-lg transition-opacity group-hover/tip:visible group-hover/tip:opacity-100 group-focus-visible/tip:visible group-focus-visible/tip:opacity-100";
 
 const choice = (on: boolean, large?: boolean) =>
   cx(
@@ -22,19 +28,55 @@ const choice = (on: boolean, large?: boolean) =>
     on ? "border-brand bg-brand text-on-brand" : "border-line bg-surface text-ink hover:border-brand",
   );
 
-export function AnswerInput({ shape, value, onChange, format, name, disabled, large, onEnter }: Props) {
+export function AnswerInput({ shape, value, onChange, format, name, disabled, large, onEnter, onAddOption, onRemoveOption }: Props) {
   if (shape.kind === "mcq") {
     return (
-      <div role="radiogroup" aria-label={`Chọn đáp án ${name}`} className="flex flex-wrap gap-2">
-        {Array.from({ length: shape.options }, (_, index) => {
-          const option = letter(index);
-          const on = value === option;
-          return (
-            <button key={option} type="button" role="radio" aria-checked={on} disabled={disabled} onClick={() => onChange(on ? null : option)} className={choice(on, large)}>
-              {option}
-            </button>
-          );
-        })}
+      <div className={cx("flex flex-wrap", onRemoveOption ? "gap-3" : "gap-2")}>
+        <div role="radiogroup" aria-label={`Chọn đáp án ${name}`} className="contents">
+          {Array.from({ length: shape.options }, (_, index) => {
+            const option = letter(index);
+            const on = value === option;
+            return (
+              <span key={option} className="relative inline-flex">
+                <button type="button" role="radio" aria-checked={on} disabled={disabled} onClick={() => onChange(on ? null : option)} className={choice(on, large)}>
+                  {option}
+                </button>
+                {onRemoveOption && (
+                  <button
+                    type="button"
+                    aria-label={`Xoá lựa chọn ${option}`}
+                    onClick={() => onRemoveOption(index)}
+                    className="group/tip absolute -right-3 -top-3 flex size-6 cursor-pointer items-center justify-center"
+                  >
+                    <span className="flex size-4 items-center justify-center rounded-full border border-line bg-surface text-muted group-hover/tip:border-danger group-hover/tip:bg-danger group-hover/tip:text-surface">
+                      <svg aria-hidden="true" viewBox="0 0 12 12" className="size-2.5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
+                        <path d="M3 3l6 6M9 3L3 9" />
+                      </svg>
+                    </span>
+                    <span role="tooltip" className={tip}>
+                      Xoá lựa chọn {option}
+                    </span>
+                  </button>
+                )}
+              </span>
+            );
+          })}
+        </div>
+        {onAddOption && (
+          <button
+            type="button"
+            aria-label={`Thêm lựa chọn ${letter(shape.options)}`}
+            onClick={onAddOption}
+            className="group/tip relative inline-flex h-10 min-w-11 cursor-pointer items-center justify-center rounded-lg border-2 border-dashed border-line text-muted hover:border-brand hover:text-brand"
+          >
+            <svg aria-hidden="true" viewBox="0 0 16 16" className="size-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+              <path d="M8 3v10M3 8h10" />
+            </svg>
+            <span role="tooltip" className={tip}>
+              Thêm lựa chọn {letter(shape.options)}
+            </span>
+          </button>
+        )}
       </div>
     );
   }

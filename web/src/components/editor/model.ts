@@ -1,4 +1,4 @@
-import { defaultShape, isComplete, type AnswerValue, type Box, type QuestionKind, type QuestionShape } from "@/lib/paperLayout";
+import { LIMITS, defaultShape, isComplete, letter, type AnswerValue, type Box, type QuestionKind, type QuestionShape } from "@/lib/paperLayout";
 
 export type EditorBox = Box & { id: string };
 
@@ -55,6 +55,14 @@ export const keyed = (item: EditorItem) => item.type === "question" && isComplet
 export function changeKind(item: QuestionItem, kind: QuestionKind): QuestionItem {
   if (item.shape.kind === kind) return item;
   return { ...item, shape: defaultShape(kind), key: null };
+}
+
+// các lựa chọn phía sau dồn lên một chữ, đáp án đi theo lựa chọn của nó
+export function removeOption(item: QuestionItem, index: number): QuestionItem {
+  if (item.shape.kind !== "mcq" || item.shape.options <= LIMITS.options[0] || index < 0 || index >= item.shape.options) return item;
+  const chosen = typeof item.key === "string" ? item.key.charCodeAt(0) - 65 : -1;
+  const key = chosen === -1 || chosen === index ? null : letter(chosen > index ? chosen - 1 : chosen);
+  return { ...item, shape: { ...item.shape, options: item.shape.options - 1 }, key };
 }
 
 // đổi số lựa chọn hay số ý thì giữ các ô còn hợp lệ của đáp án cũ
