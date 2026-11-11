@@ -228,7 +228,7 @@ test("học sinh vào thi, làm bài, nộp và thấy điểm ngay", async ({ p
   await expect(page.getByRole("link", { name: "Xem bài" })).toBeVisible();
 });
 
-test("giáo viên thấy bài đã nộp, mở lại cho học sinh và tải bảng điểm", async ({ browser }) => {
+test("giáo viên thấy bài đã nộp, cho học sinh thi lại và tải bảng điểm", async ({ browser }) => {
   const page = await asAdmin(browser);
   await page.goto(`/exams/${state.examId}`);
   const row = page.getByRole("row").filter({ hasText: STUDENT });
@@ -245,10 +245,10 @@ test("giáo viên thấy bài đã nộp, mở lại cho học sinh và tải b�
   expect(download.status()).toBe(200);
   expect(download.headers()["content-type"]).toContain("spreadsheetml");
 
-  await row.getByRole("button", { name: "Mở lại" }).click();
-  await expect(page.getByRole("dialog")).toContainText("Mở lại bài của Hoc Sinh Thi?");
+  await row.getByRole("button", { name: "Cho thi lại" }).click();
+  await expect(page.getByRole("dialog")).toContainText("Cho Hoc Sinh Thi thi lại?");
   await page.getByRole("dialog").getByLabel("Số phút làm tiếp").fill("10");
-  await page.getByRole("dialog").getByRole("button", { name: "Mở lại bài" }).click();
+  await page.getByRole("dialog").getByRole("button", { name: "Cho thi lại" }).click();
   await expect(row).toContainText("Đang làm");
   await page.close();
 

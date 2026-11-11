@@ -34,9 +34,9 @@ export function ReopenButton({ attemptId, studentName, defaultMinutes, submitted
           setOpen(true);
         }}
       >
-        {submitted ? "Mở lại" : "Gia hạn"}
+        {submitted ? "Cho thi lại" : "Gia hạn"}
       </Button>
-      <Dialog open={open} onClose={() => setOpen(false)} title={submitted ? `Mở lại bài của ${studentName}?` : `Gia hạn bài của ${studentName}?`} closeOnOutside={!pending}>
+      <Dialog open={open} onClose={() => setOpen(false)} title={submitted ? `Cho ${studentName} thi lại?` : `Gia hạn bài của ${studentName}?`} closeOnOutside={!pending}>
         <form onSubmit={submit} noValidate>
           {error && !error.field && (
             <p role="alert" className="mb-3 text-sm text-danger">
@@ -51,7 +51,7 @@ export function ReopenButton({ attemptId, studentName, defaultMinutes, submitted
               Huỷ
             </Button>
             <Button type="submit" variant="primary" disabled={pending}>
-              {submitted ? "Mở lại bài" : "Gia hạn"}
+              {submitted ? "Cho thi lại" : "Gia hạn"}
             </Button>
           </div>
         </form>

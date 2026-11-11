@@ -180,7 +180,7 @@ export default async function ExamPage({ params, searchParams }: Props) {
                       <div className="mt-0.5 text-xs text-muted">
                         {row.status === "submitted" && row.submittedAt && `Nộp lúc ${formatTime(row.submittedAt)}`}
                         {row.status === "working" && row.deadline && `Hạn ${formatTime(row.deadline)}`}
-                        {row.reopenCount > 0 && `, mở lại ${row.reopenCount} lần`}
+                        {row.reopenCount > 0 && `, thi lại ${row.reopenCount} lần`}
                       </div>
                     </td>
                     <td className={`${cell} font-semibold`}>{row.score !== null ? `${formatScore(row.score)} / ${formatScore(row.maxScore ?? 0)}` : ""}</td>
