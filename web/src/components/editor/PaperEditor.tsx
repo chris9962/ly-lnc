@@ -432,10 +432,15 @@ export function PaperEditor({ paperId, title, version: initialVersion, format: i
             </h2>
             {list.length ? (
               <ul className="space-y-1">
-                {list.map((item) => {
+                {list.map((item, index) => {
                   const summary = item.type === "question" ? formatAnswer(item.shape, item.key) : "";
+                  // câu thuộc đoạn dẫn gần nhất phía trên thì thụt vào
+                  let owner = index - 1;
+                  while (owner >= 0 && list[owner].type !== "context") owner--;
+                  const ownerItem = owner >= 0 ? list[owner] : null;
+                  const child = item.type === "question" && ownerItem?.type === "context" && index - owner <= ownerItem.count;
                   return (
-                    <li key={item.id}>
+                    <li key={item.id} className={cx(child && "ml-5")}>
                       <button
                         type="button"
                         aria-current={item.id === selection?.item ? "true" : undefined}
@@ -443,7 +448,6 @@ export function PaperEditor({ paperId, title, version: initialVersion, format: i
                         className={cx(
                           "flex w-full cursor-pointer items-center gap-2 rounded-md border-l-4 px-2 py-1.5 text-left text-sm",
                           item.id === selection?.item ? "bg-surface-alt font-semibold" : "hover:bg-surface-alt",
-                          item.type === "context" && "pl-4",
                         )}
                         style={{ borderLeftColor: kindColor(item) }}
                       >
