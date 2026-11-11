@@ -67,7 +67,7 @@ function ToolButton({ label, hint, icon, onClick, disabled, danger }: Tool) {
 
 export function EditorToolbar({ groups }: { groups: Tool[][] }) {
   return (
-    <div role="toolbar" aria-label="Công cụ chỉnh đề" aria-orientation="vertical" className="sticky top-14 z-20 flex h-[calc(100vh-3.5rem)] w-14 shrink-0 flex-col items-center gap-1 border-r border-line bg-surface py-3">
+    <div role="toolbar" aria-label="Công cụ chỉnh đề" aria-orientation="vertical" className="sticky top-[calc(var(--header-h)+3.5rem)] z-20 flex h-[calc(100vh-var(--header-h)-3.5rem)] w-14 shrink-0 flex-col items-center gap-1 border-r border-line bg-surface py-3">
       {groups.map((tools, index) => (
         <div key={index} className={cx("flex flex-col items-center gap-1", index > 0 && "mt-2 border-t border-line pt-3")}>
           {tools.map((tool) => (

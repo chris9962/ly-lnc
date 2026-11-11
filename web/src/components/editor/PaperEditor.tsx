@@ -205,7 +205,7 @@ export function PaperEditor({ paperId, title, version: initialVersion, format: i
 
   return (
     <div>
-      <div className="sticky top-0 z-30 flex h-14 items-center gap-3 border-b border-line bg-surface px-4">
+      <div className="sticky top-(--header-h) z-30 flex h-14 items-center gap-3 border-b border-line bg-surface px-4">
         {dirty ? (
           <button type="button" onClick={() => setConfirm("leave")} className="cursor-pointer text-sm text-muted hover:text-brand">
             Về trang đề
@@ -275,7 +275,7 @@ export function PaperEditor({ paperId, title, version: initialVersion, format: i
           </div>
         </div>
 
-        <aside aria-label="Câu đang chọn" className="border-l border-line bg-surface lg:sticky lg:top-14 lg:h-[calc(100vh-3.5rem)] lg:overflow-y-auto">
+        <aside aria-label="Câu đang chọn" className="border-l border-line bg-surface lg:sticky lg:top-[calc(var(--header-h)+3.5rem)] lg:h-[calc(100vh-var(--header-h)-3.5rem)] lg:overflow-y-auto">
           <div className="space-y-3 border-b border-line p-4">
             {locked && <p className="rounded-lg border border-warning bg-warning-soft px-3 py-2 text-sm text-warning">Đề đã có học sinh làm bài, chỉ sửa được khung và đáp án</p>}
             <div className="flex flex-wrap items-center gap-2">

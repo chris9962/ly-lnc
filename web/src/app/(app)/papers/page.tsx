@@ -51,7 +51,7 @@ export default async function PapersPage({ searchParams }: { searchParams: Promi
         <UploadPaperButton folders={nodes} defaultFolder={query.folder} defaultGrade={query.grade} />
       </div>
       <div className="grid grid-cols-[minmax(0,1fr)] items-start gap-4 lg:grid-cols-[17rem_minmax(0,1fr)]">
-        <Card className="p-3 lg:sticky lg:top-4">
+        <Card className="p-3 lg:sticky lg:top-[calc(var(--header-h)+1rem)]">
           <FolderTree
             nodes={nodes}
             current={query.folder}

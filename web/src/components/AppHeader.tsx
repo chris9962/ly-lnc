@@ -18,8 +18,8 @@ export function AppHeader({ user, wide }: { user: SessionUser; wide?: boolean })
   ].filter((link): link is { href: string; label: string } => !!link);
 
   return (
-    <header className="no-print border-b border-line bg-surface">
-      <div className={cx("mx-auto flex flex-wrap items-center justify-between gap-x-5 gap-y-1 px-4 py-2", wide ? "max-w-none" : "max-w-6xl")}>
+    <header className="no-print sticky top-0 z-40 box-border h-(--header-h) border-b border-line bg-surface">
+      <div className={cx("mx-auto flex h-full flex-wrap content-center items-center justify-between gap-x-5 gap-y-1 px-4", wide ? "max-w-none" : "max-w-6xl")}>
         <Link href={homePath(user)} className="flex items-center gap-2 text-lg font-bold tracking-wider text-ink no-underline">
           <Logo />
           {SITE_NAME}

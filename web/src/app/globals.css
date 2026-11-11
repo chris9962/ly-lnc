@@ -1,6 +1,8 @@
 @import "tailwindcss";
 
 :root {
+  /* chiều cao thanh trên cùng, các khối dính bên dưới dựa vào số này; màn hẹp thì menu xuống dòng thứ hai */
+  --header-h: 6.5rem;
   --bg: #f1f3f6;
   --surface: #ffffff;
   --surface-alt: #f6f8fb;
@@ -28,6 +30,12 @@
   --paper-match: #6a1b9a;
   --paper-short: #b3261e;
   --paper-context: #8a5a00;
+}
+
+@media (min-width: 40rem) {
+  :root {
+    --header-h: 3.75rem;
+  }
 }
 
 @media (prefers-color-scheme: dark) {
