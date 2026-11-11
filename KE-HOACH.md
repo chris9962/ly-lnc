@@ -231,7 +231,7 @@ Lý do không render PDF theo toạ độ trên trình duyệt:
 
 ### 4.2 Giáo viên
 
-- **Học sinh:** tạo tài khoản từng người hoặc nhập hàng loạt từ Excel, chọn khối, chuyển khối, đặt lại mật khẩu.
+- **Học sinh:** tạo tài khoản hàng loạt bằng cách dán danh sách chép từ Excel, mỗi dòng gồm họ tên và số điện thoại. Tên đăng nhập của học sinh là số điện thoại (10 chữ số, hệ thống tự đưa về một dạng: bỏ khoảng trắng, đổi +84 thành 0, thêm lại số 0 đầu mà Excel đã bỏ). Số đã có tài khoản thì cả danh sách bị từ chối. Giáo viên và admin vẫn dùng tên đăng nhập sinh từ họ tên. Chọn khối, chuyển khối, đặt lại mật khẩu.
 - **Ngân hàng đề:**
   - Cây thư mục nhiều cấp (ví dụ: Khối 10 / Học kỳ 1 / Chương 2).
   - Mỗi đề gắn khối.

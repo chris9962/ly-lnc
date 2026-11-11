@@ -37,18 +37,47 @@ describe("passwordForm", () => {
 });
 
 describe("createUsersForm", () => {
-  it("tách dữ liệu thô thành danh sách họ tên đã gọn khoảng trắng", () => {
-    const parsed = createUsersForm.parse({ role: "student", grade: "11", names: "Nguyễn Văn An\r\n\n  Trần   Thị Bình  \n" });
-    expect(parsed).toEqual({ role: "student", grade: 11, names: ["Nguyễn Văn An", "Trần Thị Bình"] });
+  it("học sinh: tách họ tên và số điện thoại, nhận dấu tab, dấu phẩy hoặc khoảng trắng", () => {
+    const parsed = createUsersForm.parse({
+      role: "student",
+      grade: "11",
+      names: "Nguyễn Văn An\t0912345678\r\n\n  Trần   Thị Bình , 0987 654 321 \nLê Văn C 912345679\n0911222333;Phạm D\n",
+    });
+    expect(parsed).toEqual({
+      role: "student",
+      grade: 11,
+      people: [
+        { fullName: "Nguyễn Văn An", phone: "0912345678" },
+        { fullName: "Trần Thị Bình", phone: "0987654321" },
+        { fullName: "Lê Văn C", phone: "0912345679" },
+        { fullName: "Phạm D", phone: "0911222333" },
+      ],
+    });
   });
 
-  it("giáo viên không có khối", () => {
-    expect(createUsersForm.parse({ role: "teacher", grade: "", names: "Lâm Ngọc Cớm" })).toEqual({ role: "teacher", grade: null, names: ["Lâm Ngọc Cớm"] });
+  it("học sinh: báo dòng thiếu số điện thoại", () => {
+    const issue = firstIssue(createUsersForm.safeParse({ role: "student", grade: "11", names: "Nguyễn Văn An 0912345678\nTrần Thị Bình" }));
+    expect(issue?.path).toEqual(["names"]);
+    expect(issue?.message).toBe("Dòng 2 thiếu số điện thoại hợp lệ");
+  });
+
+  it("học sinh: báo số điện thoại lặp trong danh sách", () => {
+    const issue = firstIssue(createUsersForm.safeParse({ role: "student", grade: "11", names: "A 0912345678\nB 0912 345 678" }));
+    expect(issue?.path).toEqual(["names"]);
+    expect(issue?.message).toBe("Số điện thoại 0912345678 bị lặp");
+  });
+
+  it("giáo viên: chỉ cần họ tên, không có khối và số điện thoại", () => {
+    expect(createUsersForm.parse({ role: "teacher", grade: "", names: "Lâm Ngọc Cớm" })).toEqual({
+      role: "teacher",
+      grade: null,
+      people: [{ fullName: "Lâm Ngọc Cớm", phone: null }],
+    });
   });
 
   it("học sinh bắt buộc có khối 10, 11 hoặc 12", () => {
-    expect(firstIssue(createUsersForm.safeParse({ role: "student", grade: "", names: "A" }))?.path).toEqual(["grade"]);
-    expect(firstIssue(createUsersForm.safeParse({ role: "student", grade: "9", names: "A" }))?.path).toEqual(["grade"]);
+    expect(firstIssue(createUsersForm.safeParse({ role: "student", grade: "", names: "A 0912345678" }))?.path).toEqual(["grade"]);
+    expect(firstIssue(createUsersForm.safeParse({ role: "student", grade: "9", names: "A 0912345678" }))?.path).toEqual(["grade"]);
   });
 
   it("từ chối danh sách trống, quá 200 dòng hoặc tên quá 80 ký tự", () => {

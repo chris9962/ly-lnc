@@ -64,7 +64,12 @@ export function CreateAccountsButton({ role, label, defaultGrade }: Props) {
                 className="max-w-48"
               />
             )}
-            <TextArea label="Họ tên, mỗi dòng một người" name="names" error={errorOf("names")} />
+            <TextArea
+              label={role === "student" ? "Họ tên và số điện thoại, mỗi dòng một người" : "Họ tên, mỗi dòng một người"}
+              name="names"
+              placeholder={role === "student" ? "Nguyễn Văn An 0912345678" : "Nguyễn Văn An"}
+              error={errorOf("names")}
+            />
             <div className="flex justify-end gap-2">
               <Button onClick={close} disabled={pending}>
                 Huỷ

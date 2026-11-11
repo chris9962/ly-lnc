@@ -2,6 +2,7 @@ import "server-only";
 import { eq } from "drizzle-orm";
 import type { LoginInput } from "@/lib/loginForm";
 import type { PasswordInput } from "@/lib/passwordForm";
+import { normalizePhone } from "@/lib/phone";
 import type { SessionUser } from "@/lib/permissions";
 import { writeAudit } from "./audit";
 import { getDb } from "./db";
@@ -13,7 +14,8 @@ import { deleteSession, deleteSessionsOf, insertSession, type IssuedSession } fr
 
 export async function login(input: LoginInput, ip: string): Promise<Result<IssuedSession & { user: SessionUser }>> {
   const db = getDb();
-  const username = input.username.toLowerCase();
+  // học sinh gõ số điện thoại theo nhiều kiểu, đưa về một dạng trước khi tra
+  const username = normalizePhone(input.username) ?? input.username.toLowerCase();
   const key = loginKey(ip, username);
   const wait = secondsBlocked(key);
   if (wait > 0) return fail(`Sai quá nhiều lần, thử lại sau ${Math.ceil(wait / 60)} phút`, 429);

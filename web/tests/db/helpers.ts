@@ -18,8 +18,12 @@ export function adminTempPassword(): string {
   return fs.readFileSync(path.join(DATA_DIR, "admin-account.txt"), "utf8").match(/Mật khẩu tạm:\s+(\S+)/)![1];
 }
 
+let phoneCounter = 0;
+export const nextPhone = () => `09${String(10000000 + ++phoneCounter)}`;
+
 export async function makeUser(role: "teacher" | "student", fullName: string, grade: Grade | null = role === "student" ? 11 : null) {
-  const result = await createUsers(adminUser(), { role, grade, names: [fullName] });
+  const phone = role === "student" ? nextPhone() : null;
+  const result = await createUsers(adminUser(), { role, grade, people: [{ fullName, phone }] });
   if (!result.ok) throw new Error(result.message);
   const issued = result.issued[0];
   const row = getDb().select().from(users).where(eq(users.username, issued.username)).get()!;

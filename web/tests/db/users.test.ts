@@ -10,28 +10,69 @@ import { adminUser, auditActions, makeUser } from "./helpers";
 const rowOf = (id: number) => getDb().select().from(users).where(eq(users.id, id)).get();
 
 describe("createUsers", () => {
-  it("sinh tên đăng nhập không trùng và mật khẩu tạm, ghi audit cho từng tài khoản", async () => {
-    const result = await createUsers(adminUser(), { role: "student", grade: 11, names: ["Nguyễn Văn An", "Nguyen Van An"] });
+  it("học sinh đăng nhập bằng số điện thoại, mật khẩu tạm được băm, có audit", async () => {
+    const result = await createUsers(adminUser(), {
+      role: "student",
+      grade: 11,
+      people: [
+        { fullName: "Nguyễn Văn An", phone: "0912345678" },
+        { fullName: "Nguyen Van An", phone: "0912345679" },
+      ],
+    });
     expect(result.ok).toBe(true);
     if (!result.ok) return;
-    expect(result.issued.map((a) => a.username)).toEqual(["annv", "annv2"]);
+    expect(result.issued.map((a) => a.username)).toEqual(["0912345678", "0912345679"]);
     expect(result.issued.every((a) => a.password.length === 8)).toBe(true);
 
-    const row = getDb().select().from(users).where(eq(users.username, "annv")).get()!;
+    const row = getDb().select().from(users).where(eq(users.username, "0912345678")).get()!;
     expect(row).toMatchObject({ role: "student", grade: 11, mustChangePassword: true, disabled: false });
     expect(row.passwordHash).not.toContain(result.issued[0].password);
     expect(auditActions(row.id)).toEqual(["user.create"]);
+
+    const session = await login({ username: "+84 912 345 678", password: result.issued[0].password }, "5.5.5.5");
+    expect(session.ok).toBe(true);
+  });
+
+  it("số điện thoại đã có tài khoản thì từ chối cả danh sách", async () => {
+    await createUsers(adminUser(), { role: "student", grade: 10, people: [{ fullName: "Đã Có", phone: "0933000001" }] });
+    const result = await createUsers(adminUser(), {
+      role: "student",
+      grade: 10,
+      people: [
+        { fullName: "Người Mới", phone: "0933000002" },
+        { fullName: "Trùng Số", phone: "0933000001" },
+      ],
+    });
+    expect(result).toMatchObject({ ok: false, status: 400, field: "names", message: "Số điện thoại đã có tài khoản: 0933000001" });
+    expect(getDb().select().from(users).where(eq(users.username, "0933000002")).get()).toBeUndefined();
+  });
+
+  it("học sinh thiếu số điện thoại bị từ chối", async () => {
+    const result = await createUsers(adminUser(), { role: "student", grade: 10, people: [{ fullName: "Thiếu Số", phone: null }] });
+    expect(result).toMatchObject({ ok: false, status: 400, field: "names" });
+  });
+
+  it("giáo viên vẫn được sinh tên đăng nhập từ họ tên, không trùng", async () => {
+    const result = await createUsers(adminUser(), {
+      role: "teacher",
+      grade: null,
+      people: [
+        { fullName: "Lâm Ngọc Cớm", phone: null },
+        { fullName: "Lam Ngoc Com", phone: null },
+      ],
+    });
+    expect(result.ok && result.issued.map((a) => a.username)).toEqual(["comln", "comln2"]);
   });
 
   it("giáo viên không tạo được giáo viên", async () => {
     const teacher = await makeUser("teacher", "Giáo Viên Một");
-    const result = await createUsers(teacher.session, { role: "teacher", grade: null, names: ["Giáo Viên Hai"] });
+    const result = await createUsers(teacher.session, { role: "teacher", grade: null, people: [{ fullName: "Giáo Viên Hai", phone: null }] });
     expect(result).toMatchObject({ ok: false, status: 403 });
   });
 
   it("học sinh không tạo được tài khoản nào", async () => {
     const student = await makeUser("student", "Học Sinh Một");
-    const result = await createUsers(student.session, { role: "student", grade: 10, names: ["Học Sinh Hai"] });
+    const result = await createUsers(student.session, { role: "student", grade: 10, people: [{ fullName: "Học Sinh Hai", phone: "0933000009" }] });
     expect(result).toMatchObject({ ok: false, status: 403 });
   });
 });
@@ -39,7 +80,8 @@ describe("createUsers", () => {
 describe("listUsers", () => {
   it("phân trang 15 dòng, tìm không phân biệt dấu và lọc theo khối ở máy chủ", async () => {
     const names = Array.from({ length: 19 }, (_, i) => `Phạm Quốc Khánh ${String.fromCharCode(65 + i)}`);
-    await createUsers(adminUser(), { role: "student", grade: 12, names: [...names, "Đặng Thị Bình"] });
+    const people = [...names, "Đặng Thị Bình"].map((fullName, i) => ({ fullName, phone: `09440000${String(i).padStart(2, "0")}` }));
+    await createUsers(adminUser(), { role: "student", grade: 12, people });
 
     const page1 = listUsers(adminUser(), { role: "student", grade: 12, q: "", page: 1 });
     expect(page1.ok && { n: page1.rows.length, total: page1.total, pageSize: page1.pageSize }).toEqual({ n: 15, total: 20, pageSize: 15 });
@@ -48,7 +90,7 @@ describe("listUsers", () => {
 
     const found = listUsers(adminUser(), { role: "student", grade: undefined, q: "dang thi binh", page: 1 });
     expect(found.ok && found.rows.map((r) => r.fullName)).toEqual(["Đặng Thị Bình"]);
-    const byUsername = listUsers(adminUser(), { role: "student", grade: undefined, q: "binhdt", page: 1 });
+    const byUsername = listUsers(adminUser(), { role: "student", grade: undefined, q: "0944000019", page: 1 });
     expect(byUsername.ok && byUsername.total).toBe(1);
 
     const otherGrade = listUsers(adminUser(), { role: "student", grade: 10, q: "khanh", page: 1 });

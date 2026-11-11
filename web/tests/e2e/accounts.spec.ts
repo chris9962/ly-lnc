@@ -4,6 +4,11 @@ import { expect, test, type Page } from "@playwright/test";
 
 test.describe.configure({ mode: "serial" });
 
+// học sinh đăng nhập bằng số điện thoại
+const AN = "0911000001";
+const AN2 = "0911000002";
+const BINH = "0911000003";
+
 const secrets = { admin: "", teacher: "", teacherTemp: "", student: "", studentTemp: "", lockedTemp: "" };
 const newPassword = (label: string) => `${label}-${Math.random().toString(36).slice(2, 10)}A1`;
 
@@ -28,7 +33,7 @@ async function createAccounts(page: Page, button: string, names: string[], grade
   await page.getByRole("button", { name: button }).click();
   const dialog = page.getByRole("dialog");
   if (grade) await dialog.getByLabel("Khối").selectOption(grade);
-  await dialog.getByLabel("Họ tên, mỗi dòng một người").fill(names.join("\n"));
+  await dialog.getByLabel(/mỗi dòng một người/).fill(names.join("\n"));
   await dialog.getByRole("button", { name: "Tạo tài khoản" }).click();
   await expect(dialog.getByRole("heading", { name: "Tài khoản vừa cấp" })).toBeVisible();
   const rows = await dialog.locator("tbody tr").evaluateAll((trs) => trs.map((tr) => [...tr.children].map((td) => td.textContent ?? "")));
@@ -83,17 +88,27 @@ test("admin phải đổi mật khẩu tạm trước khi vào trang quản lý"
 
 test("admin tạo học sinh, tìm, lọc theo khối và phân trang", async ({ page }) => {
   await login(page, "admin", secrets.admin);
-  const issued = await createAccounts(page, "Thêm học sinh", ["Nguyễn Văn An", "Nguyen Van An", "  Trần   Thị Bình  "], "11");
-  expect(issued.map((a) => a.username)).toEqual(["annv", "annv2", "binhtt"]);
+  const issued = await createAccounts(page, "Thêm học sinh", ["Nguyễn Văn An 0911000001", "Nguyen Van An\t+84911000002", "  Trần   Thị Bình , 0911 000 003 "], "11");
+  expect(issued.map((a) => a.username)).toEqual([AN, AN2, BINH]);
   expect(issued[2].fullName).toBe("Trần Thị Bình");
   secrets.studentTemp = issued[0].password;
   secrets.lockedTemp = issued[2].password;
 
   await expect(page.locator("tbody tr")).toHaveCount(3);
-  await expect(row(page, "annv")).toContainText("Mật khẩu tạm");
+  await expect(row(page, AN)).toContainText("Mật khẩu tạm");
+  await expect(page.getByRole("columnheader", { name: "Số điện thoại" })).toBeVisible();
+
+  // số đã có tài khoản thì báo lỗi ngay trong hộp thoại, không tạo ai cả
+  await page.getByRole("button", { name: "Thêm học sinh" }).click();
+  await page.getByRole("dialog").getByLabel("Khối").selectOption("10");
+  await page.getByRole("dialog").getByLabel(/mỗi dòng một người/).fill("Người Mới 0911000050\nTrùng Số 0911000001");
+  await page.getByRole("dialog").getByRole("button", { name: "Tạo tài khoản" }).click();
+  await expect(page.getByRole("dialog")).toContainText("Số điện thoại đã có tài khoản: 0911000001");
+  await page.getByRole("dialog").getByRole("button", { name: "Huỷ" }).click();
+  await expect(page.locator("tbody tr")).toHaveCount(3);
   await snapshot(page, "students");
 
-  await createAccounts(page, "Thêm học sinh", Array.from({ length: 14 }, (_, i) => `Phạm Quốc Khánh ${String.fromCharCode(65 + i)}`), "12");
+  await createAccounts(page, "Thêm học sinh", Array.from({ length: 14 }, (_, i) => `Phạm Quốc Khánh ${String.fromCharCode(65 + i)} 09120000${String(i).padStart(2, "0")}`), "12");
   await expect(page.locator("tbody tr")).toHaveCount(15);
   await expect(page.getByRole("navigation", { name: "Phân trang" })).toContainText("Trang 1/2");
   await page.getByRole("link", { name: "Trang sau" }).click();
@@ -102,7 +117,7 @@ test("admin tạo học sinh, tìm, lọc theo khối và phân trang", async ({
   await page.getByLabel("Tìm học sinh").fill("tran thi binh");
   await page.getByRole("button", { name: "Tìm" }).click();
   await expect(page.locator("tbody tr")).toHaveCount(1);
-  await expect(row(page, "binhtt")).toBeVisible();
+  await expect(row(page, BINH)).toBeVisible();
 
   await page.goto("/students");
   await page.getByRole("link", { name: "Khối 11" }).click();
@@ -121,7 +136,8 @@ test("admin tạo giáo viên", async ({ page }) => {
 });
 
 test("học sinh đổi mật khẩu tạm, vào trang kỳ thi, không vào được trang quản lý", async ({ page }) => {
-  await login(page, "annv", secrets.studentTemp);
+  // gõ số có khoảng trắng vẫn đăng nhập được
+  await login(page, "0911 000 001", secrets.studentTemp);
   await expect(page).toHaveURL(/\/change-password$/);
   secrets.student = newPassword("hs");
   await changePassword(page, secrets.studentTemp, secrets.student);
@@ -155,11 +171,11 @@ test("giáo viên quản lý học sinh nhưng không đụng được tới gi�
   // đặt lại mật khẩu: học sinh đang đăng nhập bị đăng xuất, mật khẩu cũ hết dùng được
   const studentContext = await browser.newContext();
   const studentPage = await studentContext.newPage();
-  await login(studentPage, "annv", secrets.student);
+  await login(studentPage, AN, secrets.student);
   await expect(studentPage).toHaveURL(/\/my-exams$/);
 
-  await row(page, "annv").getByRole("button", { name: "Đặt lại mật khẩu" }).click();
-  await expect(page.getByRole("dialog")).toContainText("Đặt lại mật khẩu của annv?");
+  await row(page, AN).getByRole("button", { name: "Đặt lại mật khẩu" }).click();
+  await expect(page.getByRole("dialog")).toContainText(`Đặt lại mật khẩu của ${AN}?`);
   await page.getByRole("dialog").getByRole("button", { name: "Đặt lại" }).click();
   const issuedDialog = page.getByRole("dialog").filter({ hasText: "Tài khoản vừa cấp" });
   const resetPassword = (await issuedDialog.locator("tbody tr td").nth(2).textContent()) ?? "";
@@ -168,34 +184,34 @@ test("giáo viên quản lý học sinh nhưng không đụng được tới gi�
 
   await studentPage.goto("/my-exams");
   await expect(studentPage).toHaveURL(/\/login$/);
-  await login(studentPage, "annv", secrets.student);
+  await login(studentPage, AN, secrets.student);
   await expect(alert(studentPage)).toHaveText("Tên đăng nhập hoặc mật khẩu không đúng");
   await studentContext.close();
 
   // khoá: danh sách đã quá một trang nên phải tìm trước
-  await page.goto("/students?q=binhtt");
-  await row(page, "binhtt").getByRole("button", { name: "Khoá", exact: true }).click();
-  await expect(row(page, "binhtt")).toContainText("Đã khoá");
+  await page.goto(`/students?q=${BINH}`);
+  await row(page, BINH).getByRole("button", { name: "Khoá", exact: true }).click();
+  await expect(row(page, BINH)).toContainText("Đã khoá");
   const lockedContext = await browser.newContext();
   const lockedPage = await lockedContext.newPage();
-  await login(lockedPage, "binhtt", secrets.lockedTemp);
+  await login(lockedPage, BINH, secrets.lockedTemp);
   await expect(alert(lockedPage)).toHaveText("Tài khoản đã bị khoá");
   await lockedContext.close();
-  await row(page, "binhtt").getByRole("button", { name: "Mở khoá" }).click();
-  await expect(row(page, "binhtt")).not.toContainText("Đã khoá");
+  await row(page, BINH).getByRole("button", { name: "Mở khoá" }).click();
+  await expect(row(page, BINH)).not.toContainText("Đã khoá");
 
   // đổi khối
-  await page.goto("/students?q=annv2");
-  await row(page, "annv2").getByLabel("Khối của Nguyen Van An").selectOption("10");
+  await page.goto(`/students?q=${AN2}`);
+  await row(page, AN2).getByLabel("Khối của Nguyen Van An").selectOption("10");
   await page.getByRole("link", { name: "Khối 10" }).click();
   await expect(page.locator("tbody tr")).toHaveCount(1);
 
   // xoá: huỷ thì còn, xác nhận thì mất
-  await row(page, "annv2").getByRole("button", { name: "Xoá" }).click();
-  await expect(page.getByRole("dialog")).toContainText("Xoá tài khoản annv2?");
+  await row(page, AN2).getByRole("button", { name: "Xoá" }).click();
+  await expect(page.getByRole("dialog")).toContainText(`Xoá tài khoản ${AN2}?`);
   await page.getByRole("dialog").getByRole("button", { name: "Huỷ" }).click();
-  await expect(row(page, "annv2")).toBeVisible();
-  await row(page, "annv2").getByRole("button", { name: "Xoá" }).click();
+  await expect(row(page, AN2)).toBeVisible();
+  await row(page, AN2).getByRole("button", { name: "Xoá" }).click();
   await page.getByRole("dialog").getByRole("button", { name: "Xoá" }).click();
   await expect(page.getByText("Chưa có học sinh")).toBeVisible();
 });
@@ -253,7 +269,7 @@ test("hộp thoại đóng khi bấm ra ngoài, trừ lúc đang hiện mật kh
 
   await page.getByRole("button", { name: "Thêm học sinh" }).click();
   await dialog.getByLabel("Khối").selectOption("10");
-  await dialog.getByLabel("Họ tên, mỗi dòng một người").fill("Bấm Ra Ngoài");
+  await dialog.getByLabel(/mỗi dòng một người/).fill("Bấm Ra Ngoài 0911000099");
   await dialog.getByRole("button", { name: "Tạo tài khoản" }).click();
   await expect(dialog.getByRole("heading", { name: "Tài khoản vừa cấp" })).toBeVisible();
   await page.mouse.click(5, 5);

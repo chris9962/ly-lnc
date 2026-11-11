@@ -1,5 +1,5 @@
 import "server-only";
-import { and, asc, count, eq, like, or, type SQL } from "drizzle-orm";
+import { and, asc, count, eq, inArray, like, or, type SQL } from "drizzle-orm";
 import { can, manageAction, manageableRoles, type ManagedRole, type SessionUser } from "@/lib/permissions";
 import { PAGE_SIZE, type CreateUsersInput, type ListUsersQuery, type UpdateUserInput } from "@/lib/userForm";
 import { baseUsername, searchKey } from "@/lib/username";
@@ -72,37 +72,37 @@ function freeUsername(tx: Tx, base: string): string {
 
 export async function createUsers(user: SessionUser, input: CreateUsersInput): Promise<Result<{ issued: IssuedAccount[] }>> {
   if (!can(user, manageAction(input.role))) return FORBIDDEN;
-  if (input.role === "student" && input.grade === null) return fail("Chọn khối", 400, "grade");
+  const isStudent = input.role === "student";
+  if (isStudent && input.grade === null) return fail("Chọn khối", 400, "grade");
+  if (isStudent && input.people.some((person) => !person.phone)) return fail("Học sinh cần số điện thoại", 400, "names");
 
   // băm mật khẩu trước vì transaction của SQLite chạy đồng bộ, không chờ được hàm bất đồng bộ
   const prepared = await Promise.all(
-    input.names.map(async (fullName) => {
+    input.people.map(async (person) => {
       const password = randomPassword();
-      return { fullName, password, passwordHash: await hashPassword(password) };
+      return { ...person, password, passwordHash: await hashPassword(password) };
     }),
   );
 
-  const issued = getDb().transaction((tx) =>
-    prepared.map(({ fullName, password, passwordHash }) => {
-      const username = freeUsername(tx, baseUsername(fullName));
+  return getDb().transaction((tx): Result<{ issued: IssuedAccount[] }> => {
+    if (isStudent) {
+      const phones = prepared.map((person) => person.phone!);
+      const taken = tx.select({ username: users.username }).from(users).where(inArray(users.username, phones)).all();
+      if (taken.length) return fail(`Số điện thoại đã có tài khoản: ${taken.map((row) => row.username).join(", ")}`, 400, "names");
+    }
+    const issued = prepared.map(({ fullName, phone, password, passwordHash }) => {
+      // học sinh đăng nhập bằng số điện thoại, giáo viên bằng tên sinh từ họ tên
+      const username = isStudent ? phone! : freeUsername(tx, baseUsername(fullName));
       const created = tx
         .insert(users)
-        .values({
-          username,
-          passwordHash,
-          fullName,
-          searchName: searchKey(fullName),
-          role: input.role,
-          grade: input.role === "student" ? input.grade : null,
-          createdAt: Date.now(),
-        })
+        .values({ username, passwordHash, fullName, searchName: searchKey(fullName), role: input.role, grade: isStudent ? input.grade : null, createdAt: Date.now() })
         .returning({ id: users.id })
         .get();
       writeAudit(tx, user, "user.create", { type: "user", id: created.id }, { username, role: input.role, grade: input.grade });
       return { fullName, username, password };
-    }),
-  );
-  return ok({ issued });
+    });
+    return ok({ issued });
+  });
 }
 
 // tài khoản không tồn tại và tài khoản ngoài phạm vi trả cùng một kết quả, để không lộ id nào có thật

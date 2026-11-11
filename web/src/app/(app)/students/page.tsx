@@ -53,7 +53,7 @@ export default async function StudentsPage({ searchParams }: { searchParams: Pro
           </nav>
           <SearchBox path={PATH} label="Tìm học sinh" value={query.q} keep={{ grade: gradeParam }} />
         </div>
-        <AccountTable accounts={list.rows} showGrade emptyLabel="Chưa có học sinh" />
+        <AccountTable accounts={list.rows} showGrade emptyLabel="Chưa có học sinh" usernameLabel="Số điện thoại" />
         <Pager path={PATH} params={{ grade: gradeParam, q: query.q || undefined }} page={list.page} pageCount={Math.ceil(list.total / list.pageSize)} />
       </Card>
     </>

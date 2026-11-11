@@ -27,7 +27,7 @@ export function LoginForm() {
   return (
     <form onSubmit={submit} noValidate>
       {error && !error.field && <Alert>{error.message}</Alert>}
-      <TextField label="Tên đăng nhập" name="username" autoComplete="username" autoCapitalize="none" spellCheck={false} error={error?.field === "username" ? error.message : undefined} />
+      <TextField label="Tên đăng nhập hoặc số điện thoại" name="username" autoComplete="username" autoCapitalize="none" spellCheck={false} error={error?.field === "username" ? error.message : undefined} />
       <PasswordField label="Mật khẩu" name="password" autoComplete="current-password" error={error?.field === "password" ? error.message : undefined} />
       <Button type="submit" variant="primary" className="w-full" disabled={pending}>
         Đăng nhập

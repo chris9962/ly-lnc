@@ -11,7 +11,9 @@ function Status({ account }: { account: UserListItem }) {
 
 const cell = "px-3 py-2 align-middle";
 
-export function AccountTable({ accounts, showGrade, emptyLabel }: { accounts: UserListItem[]; showGrade?: boolean; emptyLabel: string }) {
+type Props = { accounts: UserListItem[]; showGrade?: boolean; emptyLabel: string; usernameLabel?: string };
+
+export function AccountTable({ accounts, showGrade, emptyLabel, usernameLabel = "Tên đăng nhập" }: Props) {
   if (!accounts.length) return <p className="py-6 text-center text-muted">{emptyLabel}</p>;
   return (
     <div className="overflow-x-auto">
@@ -19,7 +21,7 @@ export function AccountTable({ accounts, showGrade, emptyLabel }: { accounts: Us
         <thead>
           <tr className="border-b border-line text-xs uppercase tracking-wide text-muted">
             <th scope="col" className={cell}>Họ tên</th>
-            <th scope="col" className={cell}>Tên đăng nhập</th>
+            <th scope="col" className={cell}>{usernameLabel}</th>
             {showGrade && <th scope="col" className={cell}>Khối</th>}
             <th scope="col" className={cell}>Trạng thái</th>
             <th scope="col" className={cell}>Ngày tạo</th>
