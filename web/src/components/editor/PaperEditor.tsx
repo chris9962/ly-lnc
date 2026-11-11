@@ -127,6 +127,12 @@ export function PaperEditor({ paperId, title, version: initialVersion, format: i
     setSelection({ item: selected.id, box: box.id });
   }
 
+  function removeSelectedBox() {
+    if (!selected || selected.boxes.length < 2 || !selection?.box) return;
+    updateItem(selected.id, (item) => ({ ...item, boxes: item.boxes.filter((box) => box.id !== selection.box) }));
+    setSelection({ item: selected.id, box: selected.boxes.find((box) => box.id !== selection.box)!.id });
+  }
+
   function removeSelectedItem() {
     if (!selected) return;
     change((current) => current.filter((item) => item.id !== selected.id));
@@ -267,6 +273,13 @@ export function PaperEditor({ paperId, title, version: initialVersion, format: i
                   icon: TOOL_ICONS.addBox,
                   onClick: addBoxToSelected,
                   disabled: !selected || selected.boxes.length >= 6,
+                },
+                {
+                  label: "Xoá khung đang chọn",
+                  hint: selected && selected.boxes.length < 2 ? "Mỗi câu phải còn ít nhất một khung" : "Bỏ khung đang chọn, giữ lại câu",
+                  icon: TOOL_ICONS.removeBox,
+                  onClick: removeSelectedBox,
+                  disabled: !selected || selected.boxes.length < 2,
                 },
                 {
                   label: selected?.type === "context" ? "Xoá đoạn dẫn" : "Xoá câu",

@@ -25,6 +25,12 @@ export const TOOL_ICONS = {
       <path d="M17.5 14.5v6M14.5 17.5h6" />
     </svg>
   ),
+  removeBox: (
+    <svg {...svg}>
+      <path d="M11 20H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v5" strokeDasharray="3 2.5" />
+      <path d="M14.5 17.5h6" />
+    </svg>
+  ),
   reset: (
     <svg {...svg}>
       <path d="M4 12a8 8 0 1 0 2.6-5.9" />
