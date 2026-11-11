@@ -116,6 +116,17 @@ describe("listPapers", () => {
 
     const options = paperOptions(teacher, { q: "lọc", grade: 11 });
     expect(options.ok && options.papers.map((paper) => paper.id)).toEqual([keyed]);
+
+    // 05/11/2026 23:59 và 06/11/2026 00:00 giờ Việt Nam
+    getDb().update(papers).set({ updatedAt: Date.UTC(2026, 10, 5, 16, 59) }).where(eq(papers.id, keyed)).run();
+    getDb().update(papers).set({ updatedAt: Date.UTC(2026, 10, 5, 17, 0) }).where(eq(papers.id, blank)).run();
+    const byDate = (from?: string, to?: string) => {
+      const result = listPapers(teacher, { q: "", answers: "all", page: 1, folder: folder.id, updated: "range", from, to });
+      return result.ok && result.rows.map((row) => row.id);
+    };
+    expect(byDate("2026-11-05", "2026-11-05")).toEqual([keyed]);
+    expect(byDate("2026-11-06")).toEqual([blank]);
+    expect(byDate(undefined, "2026-11-06")).toEqual([blank, keyed]);
   }, 60000);
 });
 

@@ -5,11 +5,10 @@ import { FolderTree } from "@/components/papers/FolderTree";
 import { AnswerTag } from "@/components/papers/PaperTags";
 import { UploadPaperButton } from "@/components/papers/UploadPaperButton";
 import { Card } from "@/components/ui/Card";
-import { FilterTabs, hrefWith } from "@/components/ui/FilterTabs";
+import { PaperFilters } from "@/components/papers/PaperFilters";
+import { hrefWith } from "@/components/ui/FilterTabs";
 import { Pager } from "@/components/ui/Pager";
-import { SearchBox } from "@/components/ui/SearchBox";
 import { formatDate } from "@/lib/format";
-import { GRADES } from "@/lib/grades";
 import { listPapersQuery } from "@/lib/paperForm";
 import { FORMAT_NAMES } from "@/lib/paperLayout";
 import { requirePage } from "@/lib/permissions";
@@ -29,7 +28,17 @@ export default async function PapersPage({ searchParams }: { searchParams: Promi
   if (!list.ok || !folderList.ok) notFound();
 
   const nodes = flattenFolders(folderList.folders);
-  const params = { q: query.q, grade: query.grade, answers: query.answers === "all" ? undefined : query.answers, folder: query.folder };
+  const ranged = query.updated === "range";
+  const params = {
+    q: query.q,
+    grade: query.grade,
+    answers: query.answers === "all" ? undefined : query.answers,
+    folder: query.folder,
+    updated: query.updated,
+    from: ranged ? query.from : undefined,
+    to: ranged ? query.to : undefined,
+  };
+  const filtered = query.q || query.grade || query.answers !== "all" || query.updated;
   const total = folderList.folders.reduce((sum, folder) => sum + folder.paperCount, 0);
   const allCount = listPapers(user, { q: "", answers: "all", page: 1 });
 
@@ -50,26 +59,13 @@ export default async function PapersPage({ searchParams }: { searchParams: Promi
           />
         </Card>
         <Card>
-          <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
-            <div className="flex flex-col gap-2">
-              <FilterTabs
-                label="Lọc theo khối"
-                items={[
-                  { href: hrefWith(PATH, params, { grade: undefined }), label: "Mọi khối", active: !query.grade },
-                  ...GRADES.map((grade) => ({ href: hrefWith(PATH, params, { grade }), label: `Khối ${grade}`, active: query.grade === grade })),
-                ]}
-              />
-              <FilterTabs
-                label="Lọc theo đáp án"
-                items={[
-                  { href: hrefWith(PATH, params, { answers: undefined }), label: "Mọi trạng thái", active: query.answers === "all" },
-                  { href: hrefWith(PATH, params, { answers: "has" }), label: "Đủ đáp án", active: query.answers === "has" },
-                  { href: hrefWith(PATH, params, { answers: "none" }), label: "Chưa đủ đáp án", active: query.answers === "none" },
-                ]}
-              />
-            </div>
-            <SearchBox path={PATH} label="Tìm đề theo tên" value={query.q} keep={{ grade: params.grade?.toString(), answers: params.answers, folder: params.folder?.toString() }} />
-          </div>
+          <PaperFilters
+            path={PATH}
+            q={query.q}
+            folder={query.folder}
+            total={list.total}
+            filters={{ grade: query.grade?.toString() ?? "", answers: query.answers, updated: query.updated ?? "", from: params.from ?? "", to: params.to ?? "" }}
+          />
           {list.rows.length ? (
             <div className="overflow-x-auto">
               <table className="w-full min-w-[40rem] border-collapse text-left">
@@ -106,11 +102,11 @@ export default async function PapersPage({ searchParams }: { searchParams: Promi
               </table>
             </div>
           ) : (
-            <p className="py-10 text-center text-muted">{query.q || query.grade || query.answers !== "all" || query.folder ? "Không có đề khớp bộ lọc" : "Chưa có đề nào"}</p>
+            <p className="py-10 text-center text-muted">{filtered || query.folder ? "Không có đề khớp bộ lọc" : "Chưa có đề nào"}</p>
           )}
           <Pager
             path={PATH}
-            params={{ q: query.q || undefined, grade: params.grade?.toString(), answers: params.answers, folder: params.folder?.toString() }}
+            params={{ q: query.q || undefined, grade: params.grade?.toString(), answers: params.answers, folder: params.folder?.toString(), updated: params.updated, from: params.from, to: params.to }}
             page={list.page}
             pageCount={Math.ceil(list.total / list.pageSize)}
           />

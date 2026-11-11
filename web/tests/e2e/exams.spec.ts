@@ -79,6 +79,28 @@ test("tìm đề khi gõ, không cần bấm nút", async ({ browser }) => {
   await expect(page.getByRole("link", { name: PAPER_TITLE })).toBeVisible();
   await page.getByLabel("Tìm đề theo tên").fill("khong co de nay");
   await expect(page.getByText("Không có đề khớp bộ lọc")).toBeVisible();
+  await page.getByRole("button", { name: "Xoá bộ lọc" }).click();
+  await expect(page.getByLabel("Tìm đề theo tên")).toHaveValue("");
+  await expect(page.getByRole("link", { name: PAPER_TITLE })).toBeVisible();
+  await page.close();
+});
+
+test("lọc đề theo ngày cập nhật", async ({ browser }) => {
+  const page = await asAdmin(browser);
+  await page.goto("/papers");
+  await page.getByLabel("Ngày cập nhật").selectOption("today");
+  await expect(page).toHaveURL(/updated=today/);
+  await expect(page.getByRole("link", { name: PAPER_TITLE })).toBeVisible();
+
+  await page.getByLabel("Ngày cập nhật").selectOption("range");
+  await page.getByLabel("Từ ngày", { exact: true }).pressSequentially("01012020");
+  await page.getByLabel("Đến ngày", { exact: true }).pressSequentially("02012020");
+  await expect(page).toHaveURL(/from=2020-01-01&to=2020-01-02/);
+  await expect(page.getByLabel("Từ ngày", { exact: true })).toHaveValue("01/01/2020");
+  await expect(page.getByText("Không có đề khớp bộ lọc")).toBeVisible();
+
+  await page.getByLabel("Đến ngày", { exact: true }).fill("31/02/2020");
+  await expect(page.getByText("Ngày không hợp lệ")).toBeVisible();
   await page.close();
 });
 

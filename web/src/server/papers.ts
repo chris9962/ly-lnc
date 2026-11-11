@@ -1,5 +1,6 @@
 import "server-only";
-import { and, asc, count, desc, eq, gt, isNotNull, like, lt, ne, or, type SQL } from "drizzle-orm";
+import { and, asc, count, desc, eq, gt, gte, isNotNull, like, lt, ne, or, type SQL } from "drizzle-orm";
+import { updatedBounds } from "@/lib/dateRange";
 import { can, type SessionUser } from "@/lib/permissions";
 import { MAX_PDF_BYTES, PAGE_SIZE, type ListPapersQuery, type PaperLayoutInput, type PaperMetaInput } from "@/lib/paperForm";
 import { defaultShape, isComplete, type AnswerValue, type Box, type PaperFormat, type QuestionShape } from "@/lib/paperLayout";
@@ -41,6 +42,9 @@ export function listPapers(user: SessionUser, query: ListPapersQuery): Result<{ 
   if (query.answers === "none") filters.push(or(eq(papers.questionCount, 0), lt(papers.keyedCount, papers.questionCount)));
   const key = searchKey(query.q);
   if (key) filters.push(like(papers.searchTitle, `%${escapeLike(key)}%`));
+  const bounds = updatedBounds(query, Date.now());
+  if (bounds.from !== undefined) filters.push(gte(papers.updatedAt, bounds.from));
+  if (bounds.to !== undefined) filters.push(lt(papers.updatedAt, bounds.to));
   const where = and(...filters);
 
   const total = db.select({ n: count() }).from(papers).where(where).get()?.n ?? 0;

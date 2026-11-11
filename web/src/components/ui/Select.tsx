@@ -7,9 +7,9 @@ import { FieldShell } from "./TextField";
 
 export type Option = { value: string; label: string };
 
-type Props = { label: string; options: Option[]; placeholder?: string; error?: string; compact?: boolean } & SelectHTMLAttributes<HTMLSelectElement>;
+type Props = { label: string; options: Option[]; placeholder?: string; error?: string; compact?: boolean; dense?: boolean } & SelectHTMLAttributes<HTMLSelectElement>;
 
-export function Select({ label, options, placeholder, error, compact, className, ...rest }: Props) {
+export function Select({ label, options, placeholder, error, compact, dense, className, ...rest }: Props) {
   const id = useId();
   const select = (
     <select
@@ -34,6 +34,16 @@ export function Select({ label, options, placeholder, error, compact, className,
   );
   // dạng gọn dùng trong bảng: nhãn nằm trong aria-label thay cho thẻ label hiển thị
   if (compact) return select;
+  // dạng dùng trong thanh lọc: nhãn nhỏ, không chừa lề dưới
+  if (dense)
+    return (
+      <div>
+        <label htmlFor={id} className="mb-1 block text-xs font-semibold text-muted">
+          {label}
+        </label>
+        {select}
+      </div>
+    );
   return (
     <FieldShell id={id} label={label} error={error}>
       {select}

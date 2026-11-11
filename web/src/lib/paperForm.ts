@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { UPDATED_PRESETS, isIsoDate } from "./dateRange";
 import { isGrade, type Grade } from "./grades";
 import { LIMITS, MAX_SHORT_ANSWER, PAPER_FORMATS, fitsShape, type AnswerValue } from "./paperLayout";
 
@@ -29,11 +30,16 @@ export type FolderInput = z.infer<typeof folderForm>;
 
 export const renameFolderForm = folderForm.pick({ name: true });
 
+const isoDate = z.string().refine(isIsoDate).optional().catch(undefined);
+
 export const listPapersQuery = z.object({
   q: z.string().trim().max(MAX_TITLE).catch("").default(""),
   grade: z.coerce.number().refine(isGrade).optional().catch(undefined),
   answers: z.enum(["all", "has", "none"]).catch("all").default("all"),
   folder: z.coerce.number().int().positive().optional().catch(undefined),
+  updated: z.enum(UPDATED_PRESETS).optional().catch(undefined),
+  from: isoDate,
+  to: isoDate,
   page: z.coerce.number().int().min(1).catch(1).default(1),
 });
 
