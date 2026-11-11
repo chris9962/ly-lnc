@@ -30,17 +30,13 @@ export default async function PapersPage({ searchParams }: { searchParams: Promi
 
   const nodes = flattenFolders(folderList.folders);
   const params = { q: query.q, grade: query.grade, answers: query.answers === "all" ? undefined : query.answers, folder: query.folder };
-  const currentFolder = nodes.find((node) => node.id === query.folder);
   const total = folderList.folders.reduce((sum, folder) => sum + folder.paperCount, 0);
   const allCount = listPapers(user, { q: "", answers: "all", page: 1 });
 
   return (
     <>
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold">Ngân hàng đề</h1>
-          {currentFolder && <p className="text-muted">{currentFolder.path}</p>}
-        </div>
+        <h1 className="text-2xl font-bold">Ngân hàng đề</h1>
         <UploadPaperButton folders={nodes} defaultFolder={query.folder} defaultGrade={query.grade} />
       </div>
       <div className="grid grid-cols-[minmax(0,1fr)] items-start gap-4 lg:grid-cols-[17rem_minmax(0,1fr)]">
