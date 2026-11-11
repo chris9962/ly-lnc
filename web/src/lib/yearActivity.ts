@@ -10,14 +10,22 @@ export function yearBounds(year: number) {
   return { from: Date.UTC(year, 0, 1) - VN_OFFSET_MS, to: Date.UTC(year + 1, 0, 1) - VN_OFFSET_MS };
 }
 
-// đề có thang điểm khác nhau nên quy từng bài về thang 10 trước khi lấy trung bình
-export function averageOn10(results: { score: number; maxScore: number }[]): number | null {
-  const scaled = results.filter((result) => result.maxScore > 0).map((result) => (result.score / result.maxScore) * 10);
-  if (!scaled.length) return null;
-  return Math.round((scaled.reduce((sum, value) => sum + value, 0) / scaled.length) * 100) / 100;
+const round2 = (value: number) => Math.round(value * 100) / 100;
+
+export type FormatStats = { submitted: number; average: number | null; best: number | null; scale: number | null };
+
+// mỗi loại đề thống kê riêng trên thang gốc; scale chỉ có khi mọi bài cùng điểm tối đa
+export function formatStats(results: { score: number; maxScore: number }[]): FormatStats {
+  if (!results.length) return { submitted: 0, average: null, best: null, scale: null };
+  const scores = results.map((result) => result.score);
+  const scales = new Set(results.map((result) => result.maxScore));
+  return {
+    submitted: results.length,
+    average: round2(scores.reduce((sum, value) => sum + value, 0) / scores.length),
+    best: Math.max(...scores),
+    scale: scales.size === 1 ? results[0].maxScore : null,
+  };
 }
 
-export const bestOn10 = (results: { score: number; maxScore: number }[]) => {
-  const scaled = results.filter((result) => result.maxScore > 0).map((result) => (result.score / result.maxScore) * 10);
-  return scaled.length ? Math.round(Math.max(...scaled) * 100) / 100 : null;
-};
+// hai loại đề khác thang nên biểu đồ vẽ theo phần điểm đạt được, quy về 10
+export const onTen = (score: number, maxScore: number) => (maxScore > 0 ? round2((score / maxScore) * 10) : 0);

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { averageOn10, vnIsoDate, vnYear, yearBounds } from "@/lib/yearActivity";
+import { formatStats, onTen, vnIsoDate, vnYear, yearBounds } from "@/lib/yearActivity";
 
 const vn = (y: number, m: number, d: number, h = 0, min = 0) => Date.UTC(y, m - 1, d, h - 7, min);
 
@@ -12,11 +12,16 @@ describe("năm theo giờ Việt Nam", () => {
   });
 });
 
-describe("averageOn10", () => {
-  it("quy mỗi bài về thang 10 rồi mới lấy trung bình", () => {
-    expect(averageOn10([{ score: 8, maxScore: 10 }, { score: 60, maxScore: 150 }])).toBe(6);
-    expect(averageOn10([{ score: 1, maxScore: 3 }])).toBe(3.33);
-    expect(averageOn10([])).toBeNull();
-    expect(averageOn10([{ score: 5, maxScore: 0 }])).toBeNull();
+describe("formatStats", () => {
+  it("tính riêng trên thang gốc, có thang chung khi mọi bài cùng điểm tối đa", () => {
+    expect(formatStats([{ score: 8, maxScore: 10 }, { score: 6.5, maxScore: 10 }])).toEqual({ submitted: 2, average: 7.25, best: 8, scale: 10 });
+    expect(formatStats([{ score: 90, maxScore: 150 }, { score: 60, maxScore: 120 }])).toEqual({ submitted: 2, average: 75, best: 90, scale: null });
+    expect(formatStats([])).toEqual({ submitted: 0, average: null, best: null, scale: null });
+  });
+
+  it("quy về thang 10 để vẽ chung một trục", () => {
+    expect(onTen(90, 150)).toBe(6);
+    expect(onTen(1, 3)).toBe(3.33);
+    expect(onTen(5, 0)).toBe(0);
   });
 });

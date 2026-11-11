@@ -64,8 +64,13 @@ describe("getStudentProfile", () => {
       [missed, "absent"],
       [taken, "submitted"],
     ]);
-    expect(profile.entries[1]).toMatchObject({ day: "2026-03-10", score: 0, maxScore: 10 });
-    expect(profile.stats).toEqual({ submitted: 1, working: 0, absent: 1, average: 0, best: 0 });
+    expect(profile.entries[1]).toMatchObject({ day: "2026-03-10", score: 0, maxScore: 10, format: "thpt" });
+    expect(profile.stats).toEqual({
+      working: 0,
+      absent: 1,
+      thpt: { submitted: 1, average: 0, best: 0, scale: 10 },
+      vsat: { submitted: 0, average: null, best: null, scale: null },
+    });
 
     const last = getStudentProfile(teacher, student.id, 2025);
     expect(last.ok && last.entries.map((entry) => entry.examId)).toEqual([old]);

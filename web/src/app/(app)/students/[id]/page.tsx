@@ -1,13 +1,16 @@
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { ScoreChart, type ScorePoint } from "@/components/students/ScoreChart";
 import { buttonClass } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { cx } from "@/components/ui/cx";
 import { StatusTag } from "@/components/ui/StatusTag";
 import { formatDate, formatDateTime, formatTime } from "@/lib/format";
 import { requirePage } from "@/lib/permissions";
+import { FORMAT_NAMES } from "@/lib/paperLayout";
 import { formatScore } from "@/lib/scoring";
+import { onTen, yearBounds } from "@/lib/yearActivity";
 import { getStudentProfile, type StudentEntry } from "@/server/students";
 
 type Props = { params: Promise<{ id: string }>; searchParams: Promise<Record<string, string | string[] | undefined>> };
@@ -38,7 +41,13 @@ export default async function StudentPage({ params, searchParams }: Props) {
     const month = Number(entry.day.slice(5, 7));
     months.set(month, [...(months.get(month) ?? []), entry]);
   }
-  const onTen = (value: number | null) => (value === null ? "Chưa có" : `${formatScore(value)} / 10`);
+  const points = (value: number | null, scale: number | null) => (value === null ? "Chưa có" : scale === null ? formatScore(value) : `${formatScore(value)} / ${formatScore(scale)}`);
+  const bounds = yearBounds(year);
+  const chartPoints: ScorePoint[] = entries.flatMap((entry) =>
+    entry.status === "submitted" && entry.attemptId && entry.format && entry.score !== null && entry.maxScore
+      ? [{ id: entry.attemptId, at: entry.at, title: entry.examTitle, format: entry.format, score: entry.score, maxScore: entry.maxScore, value: onTen(entry.score, entry.maxScore) }]
+      : [],
+  );
 
   return (
     <>
@@ -69,19 +78,51 @@ export default async function StudentPage({ params, searchParams }: Props) {
         </nav>
       </div>
 
-      <div className="mb-4 grid grid-cols-2 gap-3 lg:grid-cols-4">
-        {[
-          ["Kỳ thi đã nộp", String(stats.submitted)],
-          ["Điểm trung bình", onTen(stats.average)],
-          ["Điểm cao nhất", onTen(stats.best)],
-          ["Không vào thi", String(stats.absent)],
-        ].map(([label, value]) => (
-          <Card key={label} className="p-4">
-            <p className="text-sm text-muted">{label}</p>
-            <p className="text-2xl font-bold">{value}</p>
-          </Card>
-        ))}
+      <div className="mb-4 grid gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_12rem]">
+        {(["thpt", "vsat"] as const).map((format) => {
+          const group = stats[format];
+          return (
+            <Card key={format} className="p-4">
+              <h3 className="mb-3 flex items-center gap-2 font-bold">
+                <span aria-hidden="true" className="h-0.5 w-5 rounded-full" style={{ background: `var(--series-${format})` }} />
+                {FORMAT_NAMES[format]}
+              </h3>
+              <dl className="grid grid-cols-3 gap-3">
+                {[
+                  ["Đã nộp", String(group.submitted)],
+                  ["Trung bình", points(group.average, group.scale)],
+                  ["Cao nhất", points(group.best, group.scale)],
+                ].map(([label, value]) => (
+                  <div key={label}>
+                    <dt className="text-sm text-muted">{label}</dt>
+                    <dd className="whitespace-nowrap text-lg font-bold sm:text-xl">{value}</dd>
+                  </div>
+                ))}
+              </dl>
+            </Card>
+          );
+        })}
+        <Card className="p-4">
+          <h3 className="mb-3 font-bold">Chuyên cần</h3>
+          <dl className="grid grid-cols-2 gap-3 lg:grid-cols-1">
+            <div>
+              <dt className="text-sm text-muted">Không vào thi</dt>
+              <dd className="text-xl font-bold">{stats.absent}</dd>
+            </div>
+            {stats.working > 0 && (
+              <div>
+                <dt className="text-sm text-muted">Đang làm</dt>
+                <dd className="text-xl font-bold">{stats.working}</dd>
+              </div>
+            )}
+          </dl>
+        </Card>
       </div>
+
+      <Card className="mb-4">
+        <h3 className="mb-3 font-bold">Điểm các bài đã nộp</h3>
+        <ScoreChart year={year} from={bounds.from} to={bounds.to} points={chartPoints} />
+      </Card>
 
       <Card>
         <h3 className="mb-4 font-bold">Dòng thời gian</h3>

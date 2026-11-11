@@ -30,6 +30,9 @@
   --paper-match: #6a1b9a;
   --paper-short: #b3261e;
   --paper-context: #8a5a00;
+  /* màu đường trên biểu đồ điểm, đã kiểm độ phân biệt cho người mù màu trên nền sáng và tối */
+  --series-thpt: #2a78d6;
+  --series-vsat: #eb6834;
 }
 
 @media (min-width: 40rem) {
@@ -43,6 +46,8 @@
     --bg: #0f1318;
     --surface: #181d24;
     --surface-alt: #1f262f;
+    --series-thpt: #3987e5;
+    --series-vsat: #d95926;
     --line: #36404d;
     --ink: #e7ebf0;
     --muted: #a7b1bd;
