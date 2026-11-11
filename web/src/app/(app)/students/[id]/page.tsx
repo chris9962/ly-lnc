@@ -41,7 +41,7 @@ export default async function StudentPage({ params, searchParams }: Props) {
     const month = Number(entry.day.slice(5, 7));
     months.set(month, [...(months.get(month) ?? []), entry]);
   }
-  const points = (value: number | null, scale: number | null) => (value === null ? "Chưa có" : scale === null ? formatScore(value) : `${formatScore(value)} / ${formatScore(scale)}`);
+  const points = (value: number | null) => (value === null ? "Chưa có" : formatScore(value));
   const bounds = yearBounds(year);
   const chartPoints: ScorePoint[] = entries.flatMap((entry) =>
     entry.status === "submitted" && entry.attemptId && entry.format && entry.score !== null && entry.maxScore
@@ -86,12 +86,13 @@ export default async function StudentPage({ params, searchParams }: Props) {
               <h3 className="mb-3 flex items-center gap-2 font-bold">
                 <span aria-hidden="true" className="h-0.5 w-5 rounded-full" style={{ background: `var(--series-${format})` }} />
                 {FORMAT_NAMES[format]}
+                {group.scale !== null && <span className="ml-auto text-sm font-normal text-muted">Thang điểm {formatScore(group.scale)}</span>}
               </h3>
               <dl className="grid grid-cols-3 gap-3">
                 {[
                   ["Đã nộp", String(group.submitted)],
-                  ["Trung bình", points(group.average, group.scale)],
-                  ["Cao nhất", points(group.best, group.scale)],
+                  ["Trung bình", points(group.average)],
+                  ["Cao nhất", points(group.best)],
                 ].map(([label, value]) => (
                   <div key={label}>
                     <dt className="text-sm text-muted">{label}</dt>
