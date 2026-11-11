@@ -76,9 +76,12 @@ export function PaperActions({ paper, folders, canPractice }: Props) {
           Chỉnh khung và đáp án
         </Link>
         <Button onClick={() => open("edit")}>Sửa thông tin</Button>
-        <Button variant="danger" onClick={() => open("delete")}>
-          Xoá đề
-        </Button>
+        {/* đề đang dùng trong kỳ thi thì máy chủ không cho xoá, nên không hiện nút */}
+        {paper.examCount === 0 && (
+          <Button variant="danger" onClick={() => open("delete")}>
+            Xoá đề
+          </Button>
+        )}
       </div>
       {error && dialog === null && (
         <div className="mt-3">

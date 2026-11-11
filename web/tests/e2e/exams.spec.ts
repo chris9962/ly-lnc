@@ -182,10 +182,10 @@ test("tạo kỳ thi thi ngay cho khối 12", async ({ browser }) => {
 test("đề đang dùng trong kỳ thi thì không xoá được", async ({ browser }) => {
   const page = await asAdmin(browser);
   await page.goto(`/papers/${state.paperId}`);
-  await page.getByRole("button", { name: "Xoá đề" }).click();
-  await expect(page.getByRole("dialog")).toContainText(`Xoá đề ${PAPER_TITLE}?`);
-  await page.getByRole("dialog").getByRole("button", { name: "Xoá đề" }).click();
-  await expect(page.getByRole("alert").filter({ hasText: /kỳ thi/ })).toBeVisible();
+  await expect(page.getByText("Dùng trong 1 kỳ thi")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Xoá đề" })).toHaveCount(0);
+  const refused = await page.request.delete(`/api/papers/${state.paperId}`);
+  expect(refused.status()).toBe(400);
   await page.goto(`/papers/${state.paperId}`);
   await expect(page.getByRole("heading", { level: 1, name: PAPER_TITLE })).toBeVisible();
   await page.close();
