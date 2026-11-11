@@ -29,7 +29,8 @@ export function Pager({ path, params, page, pageCount }: Props) {
       </span>
     );
   return (
-    <nav aria-label="Phân trang" className="mt-4 flex items-center justify-center gap-3">
+    // dính đáy màn hình khi danh sách dài, lề âm để nền phủ hết bề ngang của Card
+    <nav aria-label="Phân trang" className="sticky bottom-0 z-10 -mx-5 -mb-5 mt-4 flex items-center justify-end gap-3 rounded-b-xl border-t border-line bg-surface px-5 py-3">
       {step("Trang trước", page - 1, page > 1, true)}
       <span className="text-sm text-muted">
         Trang {page}/{pageCount}
