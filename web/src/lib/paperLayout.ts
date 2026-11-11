@@ -13,7 +13,7 @@ export const KIND_NAMES: Record<QuestionKind, string> = {
 export const PAPER_FORMATS = ["thpt", "vsat"] as const;
 export type PaperFormat = (typeof PAPER_FORMATS)[number];
 
-export const FORMAT_NAMES: Record<PaperFormat, string> = { thpt: "Đề 3 phần", vsat: "Đề VSAT" };
+export const FORMAT_NAMES: Record<PaperFormat, string> = { thpt: "Đề THPT", vsat: "Đề VSAT" };
 
 // mcq và short lưu một chuỗi, tf và match lưu mỗi ý một ô, ô trống là null
 export type AnswerValue = string | (string | null)[];
@@ -60,7 +60,7 @@ export function isTouched(value: AnswerValue | null | undefined) {
   return value.some((cell) => cell != null && cell !== "");
 }
 
-// ý của câu Đúng/Sai: đề VSAT ghi 1. 2. 3. 4., đề 3 phần ghi a) b) c) d)
+// ý của câu Đúng/Sai: đề VSAT ghi 1. 2. 3. 4., đề THPT ghi a) b) c) d)
 export const itemLabel = (format: PaperFormat, index: number) => (format === "vsat" ? `${index + 1}.` : `${String.fromCharCode(97 + index)})`);
 
 export function formatAnswer(shape: QuestionShape, value: AnswerValue | null | undefined) {

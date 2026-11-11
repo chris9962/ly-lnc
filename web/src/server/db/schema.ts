@@ -113,7 +113,7 @@ export const paperQuestions = sqliteTable(
       .references(() => papers.id, { onDelete: "cascade" }),
     // thứ tự câu trong đề, bài làm lưu theo số này
     seq: integer("seq").notNull(),
-    // số ghi trên đề, đề 3 phần đánh lại từ 1 ở mỗi phần
+    // số ghi trên đề, đề THPT đánh lại từ 1 ở mỗi phần
     label: integer("label"),
     shape: text("shape", { mode: "json" }).$type<QuestionShape>().notNull(),
     answerKey: text("answer_key", { mode: "json" }).$type<AnswerValue | null>(),

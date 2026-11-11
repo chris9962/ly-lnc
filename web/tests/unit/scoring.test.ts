@@ -4,7 +4,7 @@ import { DEFAULT_RULES, formatScore, sameShortAnswer, scoreQuestion, maxScore } 
 const thpt = DEFAULT_RULES.thpt;
 const vsat = DEFAULT_RULES.vsat;
 
-describe("scoreQuestion theo thang 3 phần", () => {
+describe("scoreQuestion theo thang THPT", () => {
   it("nhiều lựa chọn đúng được 0,25", () => {
     expect(scoreQuestion({ kind: "mcq", options: 4 }, "B", "B", thpt)).toEqual({ points: 0.25, correct: true });
     expect(scoreQuestion({ kind: "mcq", options: 4 }, "B", "C", thpt)).toEqual({ points: 0, correct: false });

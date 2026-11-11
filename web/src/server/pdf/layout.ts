@@ -197,7 +197,7 @@ export function analyzePdf(doc: PdfDocument): Analysis {
       continue;
     }
     const label = Number(RE_QUESTION.exec(segment.text)![1]);
-    // đề 3 phần đánh số lại từ 1 ở mỗi phần nên số 1 không tính là lạ
+    // đề THPT đánh số lại từ 1 ở mỗi phần nên số 1 không tính là lạ
     if (previousLabel && label !== 1 && label === previousLabel) warnings.push(`Câu ${label} ghi hai lần liền nhau`);
     else if (previousLabel && label !== 1 && label !== previousLabel + 1) warnings.push(`Câu ${label} đứng sau câu ${previousLabel}`);
     previousLabel = label;
