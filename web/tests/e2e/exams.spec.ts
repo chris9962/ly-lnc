@@ -266,7 +266,6 @@ test("trang chi tiết học sinh hiện hoạt động theo năm", async ({ bro
   await expect(page.getByRole("heading", { level: 1, name: "Hoc Sinh Thi" })).toBeVisible();
   const year = new Date().getFullYear();
   await expect(page.getByRole("heading", { level: 2, name: `Năm ${year}` })).toBeVisible();
-  await expect(page.getByRole("group", { name: `Hoạt động năm ${year}` }).getByRole("link")).toHaveCount(1);
   // tên học sinh ở danh sách bài nộp và trang bài làm cũng dẫn về trang này
   const studentPath = new URL(page.url()).pathname;
   await page.goto(`/exams/${state.examId}`);

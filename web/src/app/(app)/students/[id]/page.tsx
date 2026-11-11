@@ -1,7 +1,6 @@
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { YearHeatmap, type DayActivity } from "@/components/students/YearHeatmap";
 import { buttonClass } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { cx } from "@/components/ui/cx";
@@ -9,7 +8,6 @@ import { StatusTag } from "@/components/ui/StatusTag";
 import { formatDate, formatDateTime, formatTime } from "@/lib/format";
 import { requirePage } from "@/lib/permissions";
 import { formatScore } from "@/lib/scoring";
-import { yearWeeks } from "@/lib/yearActivity";
 import { getStudentProfile, type StudentEntry } from "@/server/students";
 
 type Props = { params: Promise<{ id: string }>; searchParams: Promise<Record<string, string | string[] | undefined>> };
@@ -35,22 +33,10 @@ export default async function StudentPage({ params, searchParams }: Props) {
   if (!profile.ok) notFound();
   const { student, year, years, entries, stats } = profile;
 
-  const days: Record<string, DayActivity> = {};
-  for (const entry of entries) {
-    const day = (days[entry.day] ??= { done: 0, missed: 0 });
-    if (entry.status === "absent") day.missed++;
-    else day.done++;
-  }
   const months = new Map<number, StudentEntry[]>();
   for (const entry of entries) {
     const month = Number(entry.day.slice(5, 7));
     months.set(month, [...(months.get(month) ?? []), entry]);
-  }
-  const firstOfDay = new Set<StudentEntry>();
-  const seenDays = new Set<string>();
-  for (const entry of entries) {
-    if (!seenDays.has(entry.day)) firstOfDay.add(entry);
-    seenDays.add(entry.day);
   }
   const onTen = (value: number | null) => (value === null ? "Chưa có" : `${formatScore(value)} / 10`);
 
@@ -97,11 +83,6 @@ export default async function StudentPage({ params, searchParams }: Props) {
         ))}
       </div>
 
-      <Card className="mb-4">
-        <h3 className="mb-1 font-bold">Hoạt động trong năm</h3>
-        <YearHeatmap year={year} weeks={yearWeeks(year)} days={days} />
-      </Card>
-
       <Card>
         <h3 className="mb-4 font-bold">Dòng thời gian</h3>
         {entries.length ? (
@@ -113,7 +94,7 @@ export default async function StudentPage({ params, searchParams }: Props) {
                   {list.map((entry) => {
                     const state = STATUS[entry.status];
                     return (
-                      <li key={entry.examId} id={firstOfDay.has(entry) ? `day-${entry.day}` : undefined} className="relative scroll-mt-[calc(var(--header-h)+1rem)] pb-5 pl-5 last:pb-0">
+                      <li key={entry.examId} className="relative pb-5 pl-5 last:pb-0">
                         <span aria-hidden="true" className={cx("absolute -left-[0.4375rem] top-1 size-3 rounded-full border-2", state.dot)} />
                         <p className="mb-1 text-sm text-muted">{formatDateTime(entry.at)}</p>
                         <div className="flex flex-wrap items-center gap-x-3 gap-y-1">

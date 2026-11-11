@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { averageOn10, vnIsoDate, vnYear, yearBounds, yearWeeks } from "@/lib/yearActivity";
+import { averageOn10, vnIsoDate, vnYear, yearBounds } from "@/lib/yearActivity";
 
 const vn = (y: number, m: number, d: number, h = 0, min = 0) => Date.UTC(y, m - 1, d, h - 7, min);
 
@@ -9,19 +9,6 @@ describe("năm theo giờ Việt Nam", () => {
     expect(vnYear(vn(2025, 12, 31, 23, 30))).toBe(2025);
     expect(vnIsoDate(vn(2026, 11, 5, 23, 59))).toBe("2026-11-05");
     expect(yearBounds(2026)).toEqual({ from: vn(2026, 1, 1), to: vn(2027, 1, 1) });
-  });
-});
-
-describe("yearWeeks", () => {
-  it("mỗi tuần bảy ô bắt đầu từ thứ hai, đủ mọi ngày trong năm", () => {
-    const weeks = yearWeeks(2026);
-    expect(weeks.every((week) => week.length === 7)).toBe(true);
-    // 01/01/2026 là thứ năm
-    expect(weeks[0]).toEqual([null, null, null, "2026-01-01", "2026-01-02", "2026-01-03", "2026-01-04"]);
-    const days = weeks.flat().filter(Boolean);
-    expect(days).toHaveLength(365);
-    expect(days.at(-1)).toBe("2026-12-31");
-    expect(yearWeeks(2028).flat().filter(Boolean)).toHaveLength(366);
   });
 });
 
