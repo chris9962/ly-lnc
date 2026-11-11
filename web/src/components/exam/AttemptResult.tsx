@@ -30,7 +30,21 @@ export function AttemptResult({ view, backHref, backLabel }: Props) {
       <Card className="mb-4">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="min-w-0">
-            <p className="text-sm text-muted">{attempt.isPractice ? "Thi thử" : attempt.readOnly ? `Bài làm của ${attempt.ownerName}, ${attempt.ownerUsername}` : "Bài làm"}</p>
+            <p className="text-sm text-muted">
+              {attempt.isPractice ? (
+                "Thi thử"
+              ) : attempt.readOnly ? (
+                <>
+                  Bài làm của{" "}
+                  <Link href={`/students/${attempt.ownerId}`} className="font-semibold text-ink hover:text-brand">
+                    {attempt.ownerName}
+                  </Link>
+                  , {attempt.ownerUsername}
+                </>
+              ) : (
+                "Bài làm"
+              )}
+            </p>
             <h1 className="text-2xl font-bold">{attempt.title}</h1>
             <p className="mt-1 text-sm text-muted">
               {working

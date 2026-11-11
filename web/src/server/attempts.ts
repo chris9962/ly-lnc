@@ -137,6 +137,7 @@ export type AttemptView = {
     score: number | null;
     maxScore: number;
     examEndsAt: number | null;
+    ownerId: number;
     ownerName: string;
     ownerUsername: string;
     readOnly: boolean;
@@ -197,6 +198,7 @@ export function getAttemptView(user: SessionUser, attemptId: number): Result<Att
         score: attempt.score,
         maxScore: attempt.maxScore,
         examEndsAt: exam?.endsAt ?? null,
+        ownerId: attempt.userId,
         ownerName: owner.fullName,
         ownerUsername: owner.username,
         readOnly: found.readOnly,

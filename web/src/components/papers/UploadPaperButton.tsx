@@ -54,9 +54,9 @@ export function UploadPaperButton({ folders, defaultFolder, defaultGrade }: Prop
           setOpen(true);
         }}
       >
-        Up đề
+        Tải đề lên
       </Button>
-      <Dialog open={open} onClose={() => setOpen(false)} title="Up đề PDF" closeOnOutside={!pending}>
+      <Dialog open={open} onClose={() => setOpen(false)} title="Tải đề PDF lên" closeOnOutside={!pending}>
         <form onSubmit={submit} noValidate>
           {error && !error.field && <Alert>{error.message}</Alert>}
           <FileField
@@ -92,7 +92,7 @@ export function UploadPaperButton({ folders, defaultFolder, defaultGrade }: Prop
               Huỷ
             </Button>
             <Button type="submit" variant="primary" disabled={pending}>
-              Up và cắt câu
+              Tải lên và cắt câu
             </Button>
           </div>
         </form>

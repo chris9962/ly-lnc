@@ -169,7 +169,11 @@ export default async function ExamPage({ params, searchParams }: Props) {
               <tbody>
                 {rows.map((row) => (
                   <tr key={row.userId} className="border-b border-line last:border-0">
-                    <td className={cell}>{row.fullName}</td>
+                    <td className={cell}>
+                      <Link href={`/students/${row.userId}`} className="font-semibold text-ink hover:text-brand">
+                        {row.fullName}
+                      </Link>
+                    </td>
                     <td className={`${cell} font-mono`}>{row.username}</td>
                     <td className={cell}>
                       <StatusTag tone={STATUS[row.status].tone}>{STATUS[row.status].label}</StatusTag>

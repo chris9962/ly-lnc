@@ -51,17 +51,17 @@ async function asAdmin(browser: Browser) {
   return page;
 }
 
-test("up đề PDF, hệ thống cắt câu và đọc đủ đáp án", async ({ browser }) => {
+test("tải đề PDF lên, hệ thống cắt câu và đọc đủ đáp án", async ({ browser }) => {
   const page = await asAdmin(browser);
   await page.goto("/papers");
-  await page.getByRole("button", { name: "Up đề" }).click();
+  await page.getByRole("button", { name: "Tải đề lên" }).click();
   const dialog = page.getByRole("dialog");
   await dialog.locator('input[type="file"]').setInputFiles(PDF);
   // tên đề tự điền theo tên file
   await expect(dialog.getByLabel("Tên đề")).not.toHaveValue("");
   await dialog.getByLabel("Tên đề").fill(PAPER_TITLE);
   await dialog.getByLabel("Khối").selectOption("12");
-  await dialog.getByRole("button", { name: "Up và cắt câu" }).click();
+  await dialog.getByRole("button", { name: "Tải lên và cắt câu" }).click();
 
   await page.waitForURL(/\/papers\/\d+\/edit$/, { timeout: 60000 });
   state.paperId = Number(page.url().match(/papers\/(\d+)/)![1]);
@@ -267,6 +267,13 @@ test("trang chi tiết học sinh hiện hoạt động theo năm", async ({ bro
   const year = new Date().getFullYear();
   await expect(page.getByRole("heading", { level: 2, name: `Năm ${year}` })).toBeVisible();
   await expect(page.getByRole("group", { name: `Hoạt động năm ${year}` }).getByRole("link")).toHaveCount(1);
+  // tên học sinh ở danh sách bài nộp và trang bài làm cũng dẫn về trang này
+  const studentPath = new URL(page.url()).pathname;
+  await page.goto(`/exams/${state.examId}`);
+  await expect(page.getByRole("row").filter({ hasText: STUDENT }).getByRole("link", { name: "Hoc Sinh Thi" })).toHaveAttribute("href", studentPath);
+  await page.getByRole("row").filter({ hasText: STUDENT }).getByRole("link", { name: "Xem bài" }).click();
+  await expect(page.getByRole("link", { name: "Hoc Sinh Thi" })).toHaveAttribute("href", studentPath);
+  await page.goto(studentPath);
   const entry = page.getByRole("listitem").filter({ hasText: EXAM_TITLE });
   await expect(entry).toContainText("Đang làm");
   await expect(entry.getByRole("link", { name: "Xem bài" })).toBeVisible();
