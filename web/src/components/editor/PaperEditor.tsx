@@ -13,6 +13,7 @@ import { callApi } from "@/lib/api";
 import { FORMAT_NAMES, KIND_NAMES, LIMITS, QUESTION_KINDS, defaultShape, formatAnswer, letter, type Box, type PaperFormat, type QuestionShape } from "@/lib/paperLayout";
 import { pageUrl } from "@/lib/paperView";
 import { changeKind, keyed, kindColor, newId, numbering, ordered, paperColor, reshape, type EditorItem, type QuestionItem } from "./model";
+import { EditorToolbar, TOOL_ICONS } from "./EditorToolbar";
 import { PageCanvas, type CanvasBox } from "./PageCanvas";
 
 type Props = {
@@ -232,24 +233,52 @@ export function PaperEditor({ paperId, title, version: initialVersion, format: i
       )}
 
       <div className="grid lg:grid-cols-[minmax(0,1fr)_25rem]">
-        <div ref={pagesRef} className="min-w-0 bg-bg px-4 py-6">
-          {pageSizes.map((size, index) => (
-            <div key={index} data-page={index}>
-              <PageCanvas index={index} size={size} src={pageUrl(paperId, index)} boxes={canvasBoxes(index)} onSelect={(itemId, boxId) => setSelection({ item: itemId, box: boxId })} onChange={moveBox} />
-            </div>
-          ))}
+        <div className="flex min-w-0">
+          <EditorToolbar
+            groups={[
+              [
+                { label: "Thêm câu", hint: "Tạo một câu mới với khung đặt giữa màn hình", icon: TOOL_ICONS.question, onClick: addQuestion, disabled: locked },
+                { label: "Thêm đoạn dẫn", hint: "Tạo đoạn dẫn chung cho các câu ngay sau nó", icon: TOOL_ICONS.context, onClick: addContext },
+              ],
+              [
+                {
+                  label: "Thêm khung",
+                  hint: selected ? `Thêm một khung cho ${nameOf(selected).toLowerCase()}, dùng khi nội dung nằm ở hai cột hoặc hai trang` : "Chọn một câu trước",
+                  icon: TOOL_ICONS.addBox,
+                  onClick: addBoxToSelected,
+                  disabled: !selected || selected.boxes.length >= 6,
+                },
+                {
+                  label: "Xoá khung đang chọn",
+                  hint: selected && selected.boxes.length < 2 ? "Mỗi câu phải còn ít nhất một khung" : "Bỏ khung đang chọn, giữ lại câu",
+                  icon: TOOL_ICONS.removeBox,
+                  onClick: removeSelectedBox,
+                  disabled: !selected || selected.boxes.length < 2,
+                },
+                {
+                  label: selected?.type === "context" ? "Xoá đoạn dẫn" : "Xoá câu",
+                  hint: !selected ? "Chọn một câu trước" : locked && selected.type === "question" ? "Đề đã có học sinh làm bài nên không xoá được câu" : `Xoá ${nameOf(selected).toLowerCase()} cùng các khung của nó`,
+                  icon: TOOL_ICONS.trash,
+                  onClick: () => setConfirm("remove"),
+                  disabled: !selected || (locked && selected.type === "question"),
+                  danger: true,
+                },
+              ],
+            ]}
+          />
+          <div ref={pagesRef} className="min-w-0 flex-1 bg-bg px-4 py-6">
+            {pageSizes.map((size, index) => (
+              <div key={index} data-page={index}>
+                <PageCanvas index={index} size={size} src={pageUrl(paperId, index)} boxes={canvasBoxes(index)} onSelect={(itemId, boxId) => setSelection({ item: itemId, box: boxId })} onChange={moveBox} />
+              </div>
+            ))}
+          </div>
         </div>
 
         <aside aria-label="Câu đang chọn" className="border-l border-line bg-surface lg:sticky lg:top-14 lg:h-[calc(100vh-3.5rem)] lg:overflow-y-auto">
           <div className="space-y-3 border-b border-line p-4">
             {locked && <p className="rounded-lg border border-warning bg-warning-soft px-3 py-2 text-sm text-warning">Đề đã có học sinh làm bài, chỉ sửa được khung và đáp án</p>}
             <div className="flex flex-wrap items-center gap-2">
-              <Button className={small} onClick={addQuestion} disabled={locked}>
-                Thêm câu
-              </Button>
-              <Button className={small} onClick={addContext}>
-                Thêm đoạn dẫn
-              </Button>
               <label className="flex w-full items-center gap-2 text-sm">
                 <span className="whitespace-nowrap text-muted">Thang điểm</span>
                 <select
@@ -397,22 +426,8 @@ export function PaperEditor({ paperId, title, version: initialVersion, format: i
                 </div>
               )}
 
-              <div className="flex flex-wrap gap-1.5">
-                <Button className={small} onClick={addBoxToSelected} disabled={selected.boxes.length >= 6}>
-                  Thêm khung
-                </Button>
-                {selected.boxes.length > 1 && (
-                  <Button className={small} onClick={removeSelectedBox}>
-                    Xoá khung đang chọn
-                  </Button>
-                )}
-                <Button variant="danger" className={cx(small, "ml-auto")} onClick={() => setConfirm("remove")} disabled={locked && selected.type === "question"}>
-                  {selected.type === "question" ? "Xoá câu" : "Xoá đoạn dẫn"}
-                </Button>
-              </div>
-
               {selected.type === "question" && (
-                <div className="mt-4 flex gap-2">
+                <div className="mt-1 flex gap-2">
                   <Button className="flex-1" onClick={() => step(-1)} disabled={questions.indexOf(selected) <= 0}>
                     Câu trước
                   </Button>
