@@ -5,7 +5,7 @@ import { beforeAll, describe, expect, it } from "vitest";
 import { getDb } from "@/server/db";
 import { paperQuestions, papers } from "@/server/db/schema";
 import { createFolder, deleteFolder, listFolders, renameFolder } from "@/server/folders";
-import { deletePaper, getPaper, listPapers, pageImage, paperImage, paperOptions, savePaperLayout, updatePaperMeta, uploadPaper } from "@/server/papers";
+import { defaultLayout, deletePaper, getPaper, listPapers, pageImage, paperImage, paperOptions, savePaperLayout, updatePaperMeta, uploadPaper } from "@/server/papers";
 import { getObject, paperKeys } from "@/server/storage";
 import { adminUser, auditActions, makeUser } from "./helpers";
 
@@ -127,6 +127,27 @@ describe("listPapers", () => {
     expect(byDate("2026-11-05", "2026-11-05")).toEqual([keyed]);
     expect(byDate("2026-11-06")).toEqual([blank]);
     expect(byDate(undefined, "2026-11-06")).toEqual([blank, keyed]);
+  }, 60000);
+});
+
+describe("defaultLayout", () => {
+  it("trả lại bố cục cắt tự động dù đề đã bị sửa, không ghi gì vào database", async () => {
+    const id = await upload(2);
+    const before = getPaper(teacher, id);
+    if (!before.ok) throw new Error();
+    const kept = before.questions.slice(0, 1).map((question) => ({ type: "question" as const, label: 9, shape: question.shape, key: null, boxes: [{ ...question.boxes[0], y1: question.boxes[0].y1 + 30 }] }));
+    expect((await savePaperLayout(teacher, id, { format: "thpt", items: kept }, before.paper.imageVersion)).ok).toBe(true);
+
+    const result = await defaultLayout(teacher, id);
+    if (!result.ok) throw new Error(result.message);
+    const questions = result.items.filter((item) => item.type === "question");
+    expect(questions).toHaveLength(28);
+    expect(questions[0]).toMatchObject({ label: 1, shape: { kind: "mcq", options: 4 }, key: "D", boxes: before.questions[0].boxes });
+    const after = getPaper(teacher, id);
+    expect(after.ok && after.paper).toMatchObject({ questionCount: 1, imageVersion: before.paper.imageVersion + 1 });
+
+    expect(await defaultLayout(student, id)).toMatchObject({ ok: false, status: 403 });
+    expect(await defaultLayout(teacher, 99999)).toMatchObject({ ok: false, status: 404 });
   }, 60000);
 });
 

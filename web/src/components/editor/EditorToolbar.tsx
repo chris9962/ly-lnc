@@ -25,6 +25,12 @@ export const TOOL_ICONS = {
       <path d="M17.5 14.5v6M14.5 17.5h6" />
     </svg>
   ),
+  reset: (
+    <svg {...svg}>
+      <path d="M4 12a8 8 0 1 0 2.6-5.9" />
+      <path d="M4 4v4.5h4.5" />
+    </svg>
+  ),
   trash: (
     <svg {...svg}>
       <path d="M4 7h16M10 11v6M14 11v6M9 7V4h6v3M6 7l1 13h10l1-13" />

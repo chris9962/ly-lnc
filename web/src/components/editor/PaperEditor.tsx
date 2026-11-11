@@ -10,7 +10,7 @@ import { cx } from "@/components/ui/cx";
 import { fieldClass } from "@/components/ui/fieldClass";
 import { StatusTag } from "@/components/ui/StatusTag";
 import { callApi } from "@/lib/api";
-import { FORMAT_NAMES, KIND_NAMES, LIMITS, QUESTION_KINDS, defaultShape, formatAnswer, letter, type Box, type PaperFormat, type QuestionShape } from "@/lib/paperLayout";
+import { FORMAT_NAMES, KIND_NAMES, LIMITS, QUESTION_KINDS, defaultShape, formatAnswer, letter, type AnswerValue, type Box, type PaperFormat, type QuestionShape } from "@/lib/paperLayout";
 import { pageUrl } from "@/lib/paperView";
 import { changeKind, keyed, kindColor, newId, numbering, ordered, paperColor, reshape, type EditorItem, type QuestionItem } from "./model";
 import { EditorToolbar, TOOL_ICONS } from "./EditorToolbar";
@@ -27,6 +27,9 @@ type Props = {
 };
 
 type Selection = { item: string; box: string | null } | null;
+type ResetItem =
+  | { type: "context"; count: number; boxes: Box[] }
+  | { type: "question"; label: number | null; shape: QuestionShape; key: AnswerValue | null; boxes: Box[] };
 type Notice = { tone: "success" | "danger"; text: string } | null;
 
 const small = "min-h-8 px-2.5 py-1 text-sm";
@@ -40,7 +43,8 @@ export function PaperEditor({ paperId, title, version: initialVersion, format: i
   const [version, setVersion] = useState(initialVersion);
   const [saving, setSaving] = useState(false);
   const [notice, setNotice] = useState<Notice>(null);
-  const [confirm, setConfirm] = useState<"remove" | "leave" | null>(null);
+  const [confirm, setConfirm] = useState<"remove" | "leave" | "reset" | null>(null);
+  const [resetting, setResetting] = useState(false);
   const pagesRef = useRef<HTMLDivElement>(null);
 
   const list = useMemo(() => ordered(items), [items]);
@@ -128,6 +132,28 @@ export function PaperEditor({ paperId, title, version: initialVersion, format: i
     change((current) => current.filter((item) => item.id !== selected.id));
     setSelection(null);
     setConfirm(null);
+  }
+
+  // máy chủ cắt lại từ file gốc; câu cùng thứ tự và cùng loại thì giữ đáp án đã nhập
+  async function resetLayout() {
+    setConfirm(null);
+    setResetting(true);
+    const result = await callApi<{ items: ResetItem[] }>(`/api/papers/${paperId}/layout/default`, "POST");
+    setResetting(false);
+    if (!result.ok) {
+      setNotice({ tone: "danger", text: result.message });
+      return;
+    }
+    let order = 0;
+    const next = result.items.map((item): EditorItem => {
+      const boxes = item.boxes.map((box) => ({ ...box, id: newId() }));
+      if (item.type === "context") return { id: newId(), type: "context", count: item.count, boxes };
+      const old = questions[order++];
+      const keep = old && old.shape.kind === item.shape.kind && old.key !== null;
+      return { id: newId(), type: "question", label: item.label, shape: keep ? old.shape : item.shape, key: keep ? old.key : item.key, boxes };
+    });
+    change(() => next);
+    setSelection(null);
   }
 
   async function save() {
@@ -249,6 +275,15 @@ export function PaperEditor({ paperId, title, version: initialVersion, format: i
                   onClick: () => setConfirm("remove"),
                   disabled: !selected || (locked && selected.type === "question"),
                   danger: true,
+                },
+              ],
+              [
+                {
+                  label: "Đặt lại khung",
+                  hint: locked ? "Đề đã có học sinh làm bài nên không đặt lại được" : resetting ? "Đang cắt lại" : "Bỏ mọi khung đã chỉnh, cắt lại tự động từ file PDF, giữ đáp án đã nhập",
+                  icon: TOOL_ICONS.reset,
+                  onClick: () => setConfirm("reset"),
+                  disabled: locked || resetting || saving,
                 },
               ],
             ]}
@@ -474,6 +509,14 @@ export function PaperEditor({ paperId, title, version: initialVersion, format: i
         confirmLabel="Xoá"
         danger
         onConfirm={removeSelectedItem}
+        onClose={() => setConfirm(null)}
+      />
+      <ConfirmDialog
+        open={confirm === "reset"}
+        question="Đặt lại mọi khung về kết quả cắt tự động?"
+        confirmLabel="Đặt lại"
+        danger
+        onConfirm={resetLayout}
         onClose={() => setConfirm(null)}
       />
       <ConfirmDialog

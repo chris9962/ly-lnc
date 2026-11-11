@@ -235,6 +235,19 @@ export function getPaper(user: SessionUser, id: number): Result<PaperDetail> {
   return ok({ paper: { ...paper, folderName, ...usage(db, id) }, questions, contexts });
 }
 
+// chỉ đọc file gốc và cắt lại, người dùng bấm Lưu thì mới ghi
+export async function defaultLayout(user: SessionUser, id: number): Promise<Result<{ items: PaperLayoutInput["items"]; warnings: string[] }>> {
+  if (!can(user, "papers.manage")) return FORBIDDEN;
+  if (!paperRow(id)) return NOT_FOUND;
+  const source = await getObject(paperKeys.source(id));
+  if (!source) return fail("Không còn file PDF gốc của đề", 404);
+  try {
+    return ok(fromAnalysis(analyzePdf(openPdf(source))));
+  } catch {
+    return fail("Không đọc được file PDF gốc", 500);
+  }
+}
+
 export function updatePaperMeta(user: SessionUser, id: number, meta: PaperMetaInput): Result {
   if (!can(user, "papers.manage")) return FORBIDDEN;
   return getDb().transaction((tx): Result => {

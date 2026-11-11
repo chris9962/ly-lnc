@@ -121,6 +121,22 @@ test("sửa đáp án trong trình chỉnh rồi lưu", async ({ browser }) => {
   await page.close();
 });
 
+test("đặt lại khung về kết quả cắt tự động, giữ đáp án", async ({ browser }) => {
+  const page = await asAdmin(browser);
+  await page.goto(`/papers/${state.paperId}/edit`);
+  await page.getByRole("button", { name: /^Câu 1\b/ }).first().click();
+  await page.getByRole("button", { name: "Xoá câu" }).click();
+  await page.getByRole("dialog").getByRole("button", { name: "Xoá", exact: true }).click();
+  await expect(page.getByText("Đáp án 27/27")).toBeVisible();
+
+  await page.getByRole("button", { name: "Đặt lại khung" }).click();
+  await expect(page.getByRole("dialog")).toContainText("Đặt lại mọi khung về kết quả cắt tự động?");
+  await page.getByRole("dialog").getByRole("button", { name: "Đặt lại" }).click();
+  await expect(page.getByText("Đáp án 28/28")).toBeVisible();
+  await expect(page.getByText("Chưa lưu")).toBeVisible();
+  await page.close();
+});
+
 test("tạo kỳ thi thi ngay cho khối 12", async ({ browser }) => {
   const page = await asAdmin(browser);
   const created = await page.request.post("/api/users", { data: { role: "student", grade: "12", names: `Hoc Sinh Thi ${STUDENT}` } });
