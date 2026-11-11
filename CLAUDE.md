@@ -31,7 +31,7 @@ Chốt ngày 2026-11-11. Bộ quy tắc bên dưới lấy từ một dự án k
 ## Giao diện
 
 - Tailwind với token trong `src/app/globals.css`, có sáng và tối. Không viết mã màu cứng trong component, trừ khối thương hiệu.
-- Dùng component có sẵn ở `src/components/ui`: Button, TextField, PasswordField, Select, Combobox, MultiSelect, Checkbox, Dialog, Card, StatusTag, Pager, SearchBox, MonthPicker, ConfirmDialog.
+- Dùng component có sẵn ở `src/components/ui`: Button, TextField, PasswordField, Select, Combobox, MultiSelect, Checkbox, Dialog, Card, StatusTag, Pager, FilterBar, DateField, MonthPicker, ConfirmDialog. Icon lấy từ `lucide-react`, không tự vẽ.
 - WCAG AA: mọi input có label, nút chỉ có icon có aria-label, dùng được bằng bàn phím, không truyền thông tin chỉ bằng màu.
 - React: không dùng `useEffect` cho giá trị suy ra được. Xử lý tương tác trong event handler. Effect chỉ đồng bộ hệ ngoài và phải có cleanup.
 - Chữ trên màn hình: không câu giải thích, không xưng "Bạn", hộp xác nhận chỉ một câu hỏi, không dùng gạch ngang dài, không dùng dấu chấm giữa. Ngày dạng 05/11/2026, giờ Việt Nam.

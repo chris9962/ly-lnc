@@ -16,6 +16,8 @@ Lần chạy đầu tiên hệ thống tạo tài khoản `admin` với mật kh
 
 Khi sửa mã dùng `bun run dev`.
 
+Người dùng cuối bấm đúp `../start.bat`: file này cài thư viện và build nếu chưa có, chạy máy chủ ở cổng 3000, và chạy Cloudflare Tunnel nếu máy đã có `cloudflared` cùng file `%USERPROFILE%\.cloudflared\config.yml`. Đóng cửa sổ là dừng tất cả.
+
 ## Kiểm tra
 
 | Lệnh | Việc |
@@ -23,6 +25,7 @@ Khi sửa mã dùng `bun run dev`.
 | `bun run test` | Test unit (vitest) |
 | `bun test:db` | Test tầng nghiệp vụ trên database tạm |
 | `bun run e2e` | Build production rồi chạy Playwright bằng Edge có sẵn trên máy |
+| `bun run load` | Thử tải: giả lập 200 học sinh đăng nhập, cùng vào thi, lưu đáp án, nộp bài. Cần `bun run build` trước. Đổi số học sinh bằng `LOAD_STUDENTS=400` |
 | `bunx tsc --noEmit` | Kiểm tra kiểu |
 | `bun run lint` | ESLint |
 
