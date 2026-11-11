@@ -1,0 +1,2 @@
+# script bash phải giữ LF, CRLF làm hỏng trên Git Bash
+*.sh text eol=lf

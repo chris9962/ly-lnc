@@ -1,0 +1,44 @@
+# LNC: ứng dụng web thi trắc nghiệm Vật lí
+
+Quy tắc viết mã: `../CLAUDE.md`. Kế hoạch và quyết định thiết kế: `../KE-HOACH.md`.
+
+## Chạy
+
+```
+bun install
+bun run build
+bun run start
+```
+
+Mở http://localhost:3000.
+
+Lần chạy đầu tiên hệ thống tạo tài khoản `admin` với mật khẩu tạm ngẫu nhiên, ghi trong `data/admin-account.txt`. Đăng nhập xong phải đổi mật khẩu, sau đó xoá file này.
+
+Khi sửa mã dùng `bun run dev`.
+
+## Kiểm tra
+
+| Lệnh | Việc |
+|---|---|
+| `bun run test` | Test unit (vitest) |
+| `bun test:db` | Test tầng nghiệp vụ trên database tạm |
+| `bun run e2e` | Build production rồi chạy Playwright bằng Edge có sẵn trên máy |
+| `bunx tsc --noEmit` | Kiểm tra kiểu |
+| `bun run lint` | ESLint |
+
+Đặt `E2E_SHOT_DIR=<thư mục>` khi chạy E2E để lưu ảnh chụp giao diện sáng và tối.
+
+## Dữ liệu
+
+Mọi dữ liệu nằm trong `data/` (database `app.db`). Sao lưu hệ thống là chép thư mục này. Đặt biến môi trường `DATA_DIR` để dùng thư mục khác.
+
+Đổi cấu trúc bảng: sửa `src/server/db/schema.ts`, chạy `bun run db:generate`, file SQL mới trong `drizzle/` tự được áp dụng khi máy chủ khởi động.
+
+## Cấu trúc
+
+- `src/lib`: mã dùng chung. `permissions.ts` (quyền, `requireApi`, `requirePage`), các schema zod `*Form.ts`, định dạng ngày.
+- `src/server`: nghiệp vụ. Mỗi hàm nhận `SessionUser`, tự kiểm quyền, trả `{ ok: true, ... }` hoặc `{ ok: false, message, status, field? }`. Thao tác ghi gọi `writeAudit` trong cùng transaction.
+- `src/app/api`: route chỉ parse bằng zod, gọi nghiệp vụ, trả JSON.
+- `src/app`: trang. `login`, `change-password`, `(app)/students`, `(app)/teachers`, `(app)/my-exams`.
+- `src/components/ui`: component giao diện dùng chung.
+- `tests/unit`, `tests/db`, `tests/e2e`.
