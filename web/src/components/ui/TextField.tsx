@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, type InputHTMLAttributes, type TextareaHTMLAttributes } from "react";
+import { useId, type ComponentProps, type TextareaHTMLAttributes } from "react";
 import { cx } from "./cx";
 import { fieldClass } from "./fieldClass";
 
@@ -22,7 +22,7 @@ export function FieldShell({ id, label, error, children }: Shared & { id: string
   );
 }
 
-export function TextField({ label, error, className, ...rest }: Shared & InputHTMLAttributes<HTMLInputElement>) {
+export function TextField({ label, error, className, ...rest }: Shared & ComponentProps<"input">) {
   const id = useId();
   return (
     <FieldShell id={id} label={label} error={error}>

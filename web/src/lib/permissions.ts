@@ -17,11 +17,11 @@ export type SessionUser = {
   mustChangePassword: boolean;
 };
 
-export type Action = "students.manage" | "teachers.manage" | "exams.take";
+export type Action = "students.manage" | "teachers.manage" | "papers.manage" | "exams.manage" | "exams.take";
 
 const GRANTS: Record<Role, readonly Action[]> = {
-  admin: ["students.manage", "teachers.manage"],
-  teacher: ["students.manage"],
+  admin: ["students.manage", "teachers.manage", "papers.manage", "exams.manage"],
+  teacher: ["students.manage", "papers.manage", "exams.manage"],
   student: ["exams.take"],
 };
 
@@ -35,7 +35,7 @@ export const manageableRoles = (user: SessionUser): ManagedRole[] =>
 
 export function homePath(user: SessionUser): string {
   if (user.mustChangePassword) return "/change-password";
-  return can(user, "exams.take") ? "/my-exams" : "/students";
+  return can(user, "exams.take") ? "/my-exams" : "/exams";
 }
 
 const deny = (message: string, status: number) => NextResponse.json({ ok: false, message, status }, { status });

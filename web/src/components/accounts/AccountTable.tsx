@@ -17,7 +17,7 @@ export function AccountTable({ accounts, showGrade, emptyLabel, usernameLabel = 
   if (!accounts.length) return <p className="py-6 text-center text-muted">{emptyLabel}</p>;
   return (
     <div className="overflow-x-auto">
-      <table className="w-full border-collapse text-left">
+      <table className="w-full min-w-[40rem] border-collapse text-left">
         <thead>
           <tr className="border-b border-line text-xs uppercase tracking-wide text-muted">
             <th scope="col" className={cell}>Họ tên</th>

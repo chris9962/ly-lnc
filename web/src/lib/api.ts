@@ -1,7 +1,7 @@
 export type ApiFail = { ok: false; message: string; status: number; field?: string };
 export type ApiResult<T extends object = object> = ({ ok: true } & T) | ApiFail;
 
-export async function callApi<T extends object = object>(url: string, method: "POST" | "PATCH" | "DELETE", body?: unknown): Promise<ApiResult<T>> {
+export async function callApi<T extends object = object>(url: string, method: "POST" | "PUT" | "PATCH" | "DELETE", body?: unknown): Promise<ApiResult<T>> {
   try {
     const response = await fetch(url, {
       method,

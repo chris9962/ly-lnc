@@ -30,15 +30,18 @@ Khi sửa mã dùng `bun run dev`.
 
 ## Dữ liệu
 
-Mọi dữ liệu nằm trong `data/` (database `app.db`). Sao lưu hệ thống là chép thư mục này. Đặt biến môi trường `DATA_DIR` để dùng thư mục khác.
+Mọi dữ liệu nằm trong `data/`: database `app.db`, file đề và ảnh câu hỏi trong `data/files`. Sao lưu hệ thống là chép thư mục này. Đặt biến môi trường `DATA_DIR` để dùng thư mục khác.
 
 Đổi cấu trúc bảng: sửa `src/server/db/schema.ts`, chạy `bun run db:generate`, file SQL mới trong `drizzle/` tự được áp dụng khi máy chủ khởi động.
 
 ## Cấu trúc
 
 - `src/lib`: mã dùng chung. `permissions.ts` (quyền, `requireApi`, `requirePage`), các schema zod `*Form.ts`, định dạng ngày.
+- `src/lib/paperLayout.ts`, `src/lib/scoring.ts`: dạng câu hỏi, đáp án và cách chấm, dùng chung cho máy chủ và trình duyệt.
 - `src/server`: nghiệp vụ. Mỗi hàm nhận `SessionUser`, tự kiểm quyền, trả `{ ok: true, ... }` hoặc `{ ok: false, message, status, field? }`. Thao tác ghi gọi `writeAudit` trong cùng transaction.
+- `src/server/pdf`: đọc PDF bằng MuPDF, tìm mốc câu, đọc bảng đáp án, cắt ảnh. `src/server/storage.ts`: lưu file trên ổ đĩa.
+- `src/server/papers.ts`, `exams.ts`, `attempts.ts`, `grading.ts`: ngân hàng đề, kỳ thi, bài làm, chấm điểm.
 - `src/app/api`: route chỉ parse bằng zod, gọi nghiệp vụ, trả JSON.
-- `src/app`: trang. `login`, `change-password`, `(app)/students`, `(app)/teachers`, `(app)/my-exams`.
-- `src/components/ui`: component giao diện dùng chung.
-- `tests/unit`, `tests/db`, `tests/e2e`.
+- `src/app`: trang. Nhóm `(app)` có thanh menu, `(wide)` dùng cho trình chỉnh đề, `(focus)` dùng cho trang làm bài.
+- `src/components/ui`: component giao diện dùng chung. `editor`, `exam`, `exams`, `papers`: component theo màn hình.
+- `tests/unit`, `tests/db`, `tests/e2e`. Test cắt đề và E2E dùng các đề mẫu trong `../template`.

@@ -22,6 +22,15 @@ describe("can", () => {
     expect(can(user("teacher"), "teachers.manage")).toBe(false);
   });
 
+  it("giáo viên và admin quản lý ngân hàng đề và kỳ thi", () => {
+    for (const role of ["admin", "teacher"] as const) {
+      expect(can(user(role), "papers.manage")).toBe(true);
+      expect(can(user(role), "exams.manage")).toBe(true);
+    }
+    expect(can(user("student"), "papers.manage")).toBe(false);
+    expect(can(user("student"), "exams.manage")).toBe(false);
+  });
+
   it("học sinh chỉ được dự thi", () => {
     expect(can(user("student"), "exams.take")).toBe(true);
     expect(can(user("student"), "students.manage")).toBe(false);
@@ -39,8 +48,8 @@ describe("manageableRoles", () => {
 
 describe("homePath", () => {
   it("đưa mỗi vai trò về trang chính của mình", () => {
-    expect(homePath(user("admin"))).toBe("/students");
-    expect(homePath(user("teacher"))).toBe("/students");
+    expect(homePath(user("admin"))).toBe("/exams");
+    expect(homePath(user("teacher"))).toBe("/exams");
     expect(homePath(user("student"))).toBe("/my-exams");
   });
 

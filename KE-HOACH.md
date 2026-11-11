@@ -326,6 +326,19 @@ Giao diện với đề dùng nguyên PDF: đề chiếm phần lớn màn hình
 
 Hết giai đoạn 3 là hệ thống dùng được cho kỳ thi thật.
 
+Giai đoạn 2 và 3 đã làm xong ngày 2026-11-11:
+
+- Up PDF. Máy chủ dùng MuPDF đọc mốc "Câu N" in đậm, cắt mỗi câu thành ảnh WebP 200 dpi, nhận loại câu theo tiêu đề phần, nhận đoạn dẫn chung.
+- Bảng đáp án in sau dòng HẾT được đọc tự động. Không có bảng thì giáo viên nhập trong trình chỉnh.
+- Trình chỉnh: kéo và đổi cỡ khung trên ảnh trang, thêm và xoá câu, đoạn dẫn, đổi loại câu, nhập đáp án bằng phím tắt. Lưu xong thì cắt lại ảnh và chấm lại các bài đã nộp.
+- Đề đã có bài thi thật thì khoá cấu trúc, chỉ sửa được khung và đáp án.
+- Thư mục nhiều cấp, lọc theo khối và trạng thái đáp án, tìm ngay khi gõ.
+- Kỳ thi: thi ngay hoặc hẹn giờ, giao cho một khối, mỗi học sinh làm một lần. Giáo viên mở lại hoặc gia hạn được từng bài.
+- Trang làm bài: từng câu, bảng câu theo phần, đánh dấu xem lại, tự lưu từng câu, đồng hồ theo giờ máy chủ, hết giờ tự nộp.
+- Điểm hiện ngay khi nộp. Đáp án mở sau giờ kết thúc kỳ thi. Thi thử của giáo viên thấy đáp án ngay.
+- Trang kỳ thi của giáo viên: số bài đã nộp, điểm trung bình, danh sách học sinh, tải bảng điểm Excel.
+- Chưa làm: chế độ nguyên PDF và phiếu trả lời, nhiều mã đề.
+
 ### Giai đoạn 4: Hoàn thiện
 
 - Thống kê theo câu, theo khối.

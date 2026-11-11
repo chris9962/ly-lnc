@@ -82,12 +82,16 @@ test("admin phải đổi mật khẩu tạm trước khi vào trang quản lý"
 
   secrets.admin = newPassword("admin");
   await changePassword(page, temp, secrets.admin);
-  await expect(page).toHaveURL(/\/students$/);
-  await expect(page.getByRole("heading", { level: 1, name: "Học sinh" })).toBeVisible();
+  await expect(page).toHaveURL(/\/exams$/);
+  // file spec khác dùng lại mật khẩu admin vì mỗi file chạy trong tiến trình riêng
+  fs.writeFileSync(path.join(process.env.E2E_DATA_DIR!, "e2e-admin.txt"), secrets.admin);
+  await expect(page.getByRole("heading", { level: 1, name: "Kỳ thi" })).toBeVisible();
 });
 
 test("admin tạo học sinh, tìm, lọc theo khối và phân trang", async ({ page }) => {
   await login(page, "admin", secrets.admin);
+  await expect(page).toHaveURL(/\/exams$/);
+  await page.goto("/students");
   const issued = await createAccounts(page, "Thêm học sinh", ["Nguyễn Văn An 0911000001", "Nguyen Van An\t+84911000002", "  Trần   Thị Bình , 0911 000 003 "], "11");
   expect(issued.map((a) => a.username)).toEqual([AN, AN2, BINH]);
   expect(issued[2].fullName).toBe("Trần Thị Bình");
@@ -114,9 +118,11 @@ test("admin tạo học sinh, tìm, lọc theo khối và phân trang", async ({
   await page.getByRole("link", { name: "Trang sau" }).click();
   await expect(page.locator("tbody tr")).toHaveCount(2);
 
-  await page.getByLabel("Tìm học sinh").fill("tran thi binh");
-  await page.getByRole("button", { name: "Tìm" }).click();
+  // gõ xong là tự tìm, không có nút
+  await page.getByLabel("Tìm học sinh").pressSequentially("tran thi binh", { delay: 20 });
+  await expect(page).toHaveURL(/q=tran\+thi\+binh/);
   await expect(page.locator("tbody tr")).toHaveCount(1);
+  await expect(page.getByRole("button", { name: "Tìm" })).toHaveCount(0);
   await expect(row(page, BINH)).toBeVisible();
 
   await page.goto("/students");
@@ -157,10 +163,10 @@ test("giáo viên quản lý học sinh nhưng không đụng được tới gi�
   await login(page, "comln", secrets.teacherTemp);
   secrets.teacher = newPassword("gv");
   await changePassword(page, secrets.teacherTemp, secrets.teacher);
-  await expect(page).toHaveURL(/\/students$/);
+  await expect(page).toHaveURL(/\/exams$/);
   await expect(page.getByRole("link", { name: "Giáo viên" })).toHaveCount(0);
   await page.goto("/teachers");
-  await expect(page).toHaveURL(/\/students$/);
+  await expect(page).toHaveURL(/\/exams$/);
 
   const teachers = await page.request.get("/api/users?role=teacher");
   expect(teachers.status()).toBe(403);
@@ -174,6 +180,7 @@ test("giáo viên quản lý học sinh nhưng không đụng được tới gi�
   await login(studentPage, AN, secrets.student);
   await expect(studentPage).toHaveURL(/\/my-exams$/);
 
+  await page.goto(`/students?q=${AN}`);
   await row(page, AN).getByRole("button", { name: "Đặt lại mật khẩu" }).click();
   await expect(page.getByRole("dialog")).toContainText(`Đặt lại mật khẩu của ${AN}?`);
   await page.getByRole("dialog").getByRole("button", { name: "Đặt lại" }).click();
@@ -257,6 +264,8 @@ test("thanh trên cùng gom thông tin người dùng vào một nút, mở ra m
 
 test("hộp thoại đóng khi bấm ra ngoài, trừ lúc đang hiện mật khẩu tạm", async ({ page }) => {
   await login(page, "comln", secrets.teacher);
+  await expect(page).toHaveURL(/\/exams$/);
+  await page.goto("/students");
   const dialog = page.getByRole("dialog");
 
   await page.getByRole("button", { name: "Thêm học sinh" }).click();

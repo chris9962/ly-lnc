@@ -17,6 +17,17 @@
   --warning: #7a4f00;
   --warning-soft: #fff3d6;
   --overlay: rgb(15 20 30 / 0.55);
+  --kind-mcq: #1757c2;
+  --kind-tf: #1a6b2d;
+  --kind-match: #6a1b9a;
+  --kind-short: #b3261e;
+  --kind-context: #8a5a00;
+  /* khung vẽ trên trang đề: trang luôn nền trắng nên giữ màu đậm ở cả chế độ tối */
+  --paper-mcq: #1757c2;
+  --paper-tf: #1a6b2d;
+  --paper-match: #6a1b9a;
+  --paper-short: #b3261e;
+  --paper-context: #8a5a00;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -37,6 +48,11 @@
     --warning: #f2c66d;
     --warning-soft: #35290d;
     --overlay: rgb(0 0 0 / 0.65);
+    --kind-mcq: #6ea0f5;
+    --kind-tf: #7fd48e;
+    --kind-match: #d39af0;
+    --kind-short: #ff8f85;
+    --kind-context: #f2c66d;
   }
 }
 
@@ -57,6 +73,11 @@
   --color-warning: var(--warning);
   --color-warning-soft: var(--warning-soft);
   --color-overlay: var(--overlay);
+  --color-kind-mcq: var(--kind-mcq);
+  --color-kind-tf: var(--kind-tf);
+  --color-kind-match: var(--kind-match);
+  --color-kind-short: var(--kind-short);
+  --color-kind-context: var(--kind-context);
   --font-sans: system-ui, "Segoe UI", Roboto, sans-serif;
   --font-mono: ui-monospace, Consolas, monospace;
 }

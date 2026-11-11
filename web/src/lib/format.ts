@@ -21,3 +21,20 @@ export function formatDateTime(timestamp: number): string {
   const p = parts(timestamp);
   return `${p.day}/${p.month}/${p.year} ${p.hour}:${p.minute}`;
 }
+
+export function formatTime(timestamp: number): string {
+  const p = parts(timestamp);
+  return `${p.hour}:${p.minute}`;
+}
+
+// cùng ngày thì chỉ ghi ngày một lần
+export function formatRange(start: number, end: number): string {
+  return formatDate(start) === formatDate(end) ? `${formatDateTime(start)} đến ${formatTime(end)}` : `${formatDateTime(start)} đến ${formatDateTime(end)}`;
+}
+
+export function formatDuration(ms: number): string {
+  const totalSeconds = Math.max(0, Math.round(ms / 1000));
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return minutes ? `${minutes} phút ${seconds} giây` : `${seconds} giây`;
+}

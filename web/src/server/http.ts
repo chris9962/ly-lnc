@@ -33,3 +33,7 @@ export function setSessionCookie(response: NextResponse, request: NextRequest, s
 }
 
 export const clearSessionCookie = (response: NextResponse) => response.cookies.delete(SESSION_COOKIE);
+
+// đường dẫn ảnh mang số phiên bản của đề nên trình duyệt giữ lâu được; private để proxy không lưu chung
+export const webpResponse = (image: Buffer) =>
+  new NextResponse(new Uint8Array(image), { headers: { "content-type": "image/webp", "cache-control": "private, max-age=86400" } });

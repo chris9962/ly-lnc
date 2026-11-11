@@ -13,6 +13,8 @@ export const DATA_DIR = process.env.DATA_DIR ?? path.join(process.cwd(), "data")
 
 export type Db = BetterSQLite3Database<typeof schema>;
 export type Tx = Parameters<Parameters<Db["transaction"]>[0]>[0];
+// hàm chỉ đọc dùng được cả trong lẫn ngoài transaction
+export type Reader = Db | Tx;
 
 function seedAdmin(db: Db): string | null {
   return db.transaction(
