@@ -275,7 +275,7 @@ export function ExamRunner({ view }: { view: AttemptView }) {
           </div>
         </article>
 
-        <nav aria-label="Danh sách câu" className="rounded-xl border border-line bg-surface p-4 lg:sticky lg:top-20">
+        <nav aria-label="Danh sách câu" className="rounded-xl border border-line bg-surface p-4 lg:sticky">
           <p className="mb-2 font-bold">
             Đã làm {done}/{questions.length}
           </p>
