@@ -3,9 +3,9 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { callApi } from "@/lib/api";
-import { Button } from "./ui/Button";
+import { buttonClass } from "./ui/Button";
 
-export function LogoutButton() {
+export function LogoutButton({ className }: { className?: string }) {
   const router = useRouter();
   const [pending, setPending] = useState(false);
 
@@ -17,8 +17,8 @@ export function LogoutButton() {
   }
 
   return (
-    <Button size="sm" onClick={logout} disabled={pending}>
+    <button type="button" className={className ?? buttonClass("secondary", "sm")} onClick={logout} disabled={pending}>
       Đăng xuất
-    </Button>
+    </button>
   );
 }

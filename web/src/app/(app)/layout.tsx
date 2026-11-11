@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { Logo } from "@/components/Logo";
-import { LogoutButton } from "@/components/LogoutButton";
-import { buttonClass } from "@/components/ui/Button";
+import { UserMenu } from "@/components/UserMenu";
 import { can, homePath, requirePage, type SessionUser } from "@/lib/permissions";
 import { SITE_NAME } from "@/lib/site";
 
@@ -15,7 +14,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   return (
     <>
       <header className="no-print border-b border-line bg-surface">
-        <div className="mx-auto flex max-w-5xl flex-wrap items-center gap-x-5 gap-y-2 px-4 py-2.5">
+        <div className="mx-auto flex max-w-5xl items-center gap-x-5 px-4 py-2">
           <Link href={homePath(user)} className="flex items-center gap-2 text-lg font-bold tracking-wider text-ink no-underline">
             <Logo />
             {SITE_NAME}
@@ -37,14 +36,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
               </Link>
             )}
           </nav>
-          <div className="text-right text-sm leading-tight">
-            <div className="font-semibold">{user.fullName}</div>
-            <div className="text-muted">{roleLabel(user)}</div>
-          </div>
-          <Link href="/change-password" className={buttonClass("secondary", "sm")}>
-            Đổi mật khẩu
-          </Link>
-          <LogoutButton />
+          <UserMenu fullName={user.fullName} username={user.username} roleLabel={roleLabel(user)} />
         </div>
       </header>
       <main className="mx-auto max-w-5xl px-4 pb-12 pt-6">{children}</main>

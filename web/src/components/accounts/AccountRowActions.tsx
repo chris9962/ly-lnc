@@ -96,7 +96,7 @@ export function AccountRowActions({ account }: { account: Account }) {
         onConfirm={() => run(`/api/users/${account.id}`, "DELETE")}
         onClose={closeConfirm}
       />
-      <Dialog open={!!issued} onClose={() => setIssued(null)} title="Đặt lại mật khẩu" wide>
+      <Dialog open={!!issued} onClose={() => setIssued(null)} title="Đặt lại mật khẩu" wide closeOnOutside={false}>
         {issued && <IssuedAccounts issued={[issued]} onClose={() => setIssued(null)} />}
       </Dialog>
     </div>

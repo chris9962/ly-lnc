@@ -202,11 +202,64 @@ test("giáo viên quản lý học sinh nhưng không đụng được tới gi�
 
 test("đăng xuất xong không vào lại được", async ({ page }) => {
   await login(page, "comln", secrets.teacher);
+  await page.getByRole("button", { name: "Tài khoản" }).click();
   await page.getByRole("button", { name: "Đăng xuất" }).click();
   await expect(page).toHaveURL(/\/login$/);
   await page.goto("/students");
   await expect(page).toHaveURL(/\/login$/);
   expect((await page.request.get("/api/users?role=student")).status()).toBe(401);
+});
+
+test("thanh trên cùng gom thông tin người dùng vào một nút, mở ra mới thấy đổi mật khẩu và đăng xuất", async ({ page }) => {
+  await login(page, "comln", secrets.teacher);
+  const trigger = page.getByRole("button", { name: "Tài khoản" });
+  const panel = page.getByRole("group", { name: "Tài khoản" });
+  await expect(trigger).toHaveAttribute("aria-expanded", "false");
+  await expect(page.getByRole("button", { name: "Đăng xuất" })).toHaveCount(0);
+  await expect(page.getByRole("link", { name: "Đổi mật khẩu" })).toHaveCount(0);
+
+  await trigger.click();
+  await expect(trigger).toHaveAttribute("aria-expanded", "true");
+  await expect(panel).toContainText("Lâm Ngọc Cớm");
+  await expect(panel).toContainText("comln");
+  await expect(panel).toContainText("Giáo viên");
+  await expect(panel.getByRole("button", { name: "Đăng xuất" })).toBeVisible();
+  await snapshot(page, "user-menu");
+
+  await page.keyboard.press("Escape");
+  await expect(panel).toHaveCount(0);
+  await expect(trigger).toBeFocused();
+
+  await trigger.click();
+  await page.getByRole("heading", { level: 1 }).click();
+  await expect(panel).toHaveCount(0);
+
+  await trigger.click();
+  await panel.getByRole("link", { name: "Đổi mật khẩu" }).click();
+  await expect(page).toHaveURL(/\/change-password$/);
+});
+
+test("hộp thoại đóng khi bấm ra ngoài, trừ lúc đang hiện mật khẩu tạm", async ({ page }) => {
+  await login(page, "comln", secrets.teacher);
+  const dialog = page.getByRole("dialog");
+
+  await page.getByRole("button", { name: "Thêm học sinh" }).click();
+  await expect(dialog).toBeVisible();
+  // bấm vào trong hộp thoại thì không đóng
+  await dialog.getByRole("heading", { name: "Thêm học sinh" }).click();
+  await expect(dialog).toBeVisible();
+  await page.mouse.click(5, 5);
+  await expect(dialog).toHaveCount(0);
+
+  await page.getByRole("button", { name: "Thêm học sinh" }).click();
+  await dialog.getByLabel("Khối").selectOption("10");
+  await dialog.getByLabel("Họ tên, mỗi dòng một người").fill("Bấm Ra Ngoài");
+  await dialog.getByRole("button", { name: "Tạo tài khoản" }).click();
+  await expect(dialog.getByRole("heading", { name: "Tài khoản vừa cấp" })).toBeVisible();
+  await page.mouse.click(5, 5);
+  await expect(dialog.getByRole("heading", { name: "Tài khoản vừa cấp" })).toBeVisible();
+  await dialog.getByRole("button", { name: "Đóng" }).click();
+  await expect(dialog).toHaveCount(0);
 });
 
 test("trang đăng nhập dùng được bằng bàn phím và có nhãn cho mọi ô nhập", async ({ page }) => {

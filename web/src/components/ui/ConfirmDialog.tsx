@@ -16,7 +16,7 @@ type Props = {
 
 export function ConfirmDialog({ open, question, confirmLabel, danger, pending, error, onConfirm, onClose }: Props) {
   return (
-    <Dialog open={open} onClose={onClose} title={question}>
+    <Dialog open={open} onClose={onClose} title={question} closeOnOutside={!pending}>
       {error && (
         <p role="alert" className="mb-3 text-sm text-danger">
           {error}

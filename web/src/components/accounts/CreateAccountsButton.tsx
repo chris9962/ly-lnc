@@ -47,7 +47,7 @@ export function CreateAccountsButton({ role, label, defaultGrade }: Props) {
       <Button variant="primary" onClick={() => setOpen(true)}>
         {label}
       </Button>
-      <Dialog open={open} onClose={close} title={label} wide>
+      <Dialog open={open} onClose={close} title={label} wide closeOnOutside={!issued && !pending}>
         {issued ? (
           <IssuedAccounts issued={issued} onClose={close} />
         ) : (
