@@ -1,5 +1,6 @@
 "use client";
 
+import { Eye, EyeOff } from "lucide-react";
 import { useId, useState, type InputHTMLAttributes } from "react";
 import { cx } from "./cx";
 import { fieldClass } from "./fieldClass";
@@ -28,11 +29,7 @@ export function PasswordField({ label, error, className, ...rest }: Props) {
           onClick={() => setVisible((value) => !value)}
           className="absolute inset-y-0 right-0 flex w-11 cursor-pointer items-center justify-center rounded-r-lg text-muted hover:text-ink"
         >
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-            <path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z" />
-            <circle cx="12" cy="12" r="3" />
-            {visible && <path d="M4 4l16 16" />}
-          </svg>
+          {visible ? <EyeOff aria-hidden="true" className="size-5" /> : <Eye aria-hidden="true" className="size-5" />}
         </button>
       </div>
     </FieldShell>

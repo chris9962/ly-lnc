@@ -1,5 +1,6 @@
 "use client";
 
+import { ChevronDown } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { LogoutButton } from "./LogoutButton";
@@ -48,9 +49,7 @@ export function UserMenu({ fullName, username, roleLabel }: Props) {
           {initial}
         </span>
         <span className="hidden max-w-40 truncate text-sm font-semibold sm:inline">{fullName}</span>
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className={open ? "rotate-180" : ""}>
-          <path d="m6 9 6 6 6-6" />
-        </svg>
+        <ChevronDown aria-hidden="true" strokeWidth={2.5} className={open ? "size-3.5 rotate-180" : "size-3.5"} />
       </button>
       {open && (
         <div role="group" aria-label="Tài khoản" className="absolute right-0 top-full z-30 mt-2 w-64 rounded-xl border border-line bg-surface p-2 shadow-lg">

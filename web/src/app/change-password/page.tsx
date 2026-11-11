@@ -1,3 +1,4 @@
+import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { LogoutButton } from "@/components/LogoutButton";
 import { buttonClass } from "@/components/ui/Button";
@@ -23,6 +24,7 @@ export default async function ChangePasswordPage() {
             <span />
           ) : (
             <Link href={homePath(user)} className={buttonClass("secondary", "sm")}>
+              <ArrowLeft aria-hidden="true" className="size-4" />
               Quay lại
             </Link>
           )}

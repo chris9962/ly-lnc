@@ -1,5 +1,6 @@
 "use client";
 
+import { FileUp } from "lucide-react";
 import { useId, useState, type DragEvent } from "react";
 import { cx } from "./cx";
 
@@ -46,10 +47,7 @@ export function FileField({ label, name, accept, error, onPick }: Props) {
           over ? "border-brand bg-surface-alt" : error ? "border-danger" : "border-line hover:bg-surface-alt",
         )}
       >
-        <svg aria-hidden="true" viewBox="0 0 24 24" className="size-8 text-muted">
-          <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
-          <path d="M14 3v5h5M12 17v-6m-3 3 3-3 3 3" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
+        <FileUp aria-hidden="true" strokeWidth={1.6} className="size-8 text-muted" />
         {file ? (
           <>
             <span className="break-all font-semibold">{file.name}</span>

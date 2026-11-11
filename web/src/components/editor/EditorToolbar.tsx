@@ -1,47 +1,18 @@
+import { FilePlus, ListPlus, RotateCcw, SquareMinus, SquarePlus, Trash2 } from "lucide-react";
 import type { ReactNode } from "react";
 import { cx } from "@/components/ui/cx";
 
 type Tool = { label: string; hint: string; icon: ReactNode; onClick: () => void; disabled?: boolean; danger?: boolean };
 
-const svg = { viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 1.8, strokeLinecap: "round", strokeLinejoin: "round", className: "size-5", "aria-hidden": true } as const;
+const icon = { "aria-hidden": true, className: "size-5", strokeWidth: 1.8 } as const;
 
 export const TOOL_ICONS = {
-  question: (
-    <svg {...svg}>
-      <path d="M13 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h4" />
-      <path d="M13 3v4a1 1 0 0 0 1 1h4l-5-5zM18 8v3" />
-      <path d="M17.5 14.5v6M14.5 17.5h6" />
-    </svg>
-  ),
-  context: (
-    <svg {...svg}>
-      <path d="M4 6h16M4 10h16M4 14h8M4 18h6" />
-      <path d="M17.5 14.5v6M14.5 17.5h6" />
-    </svg>
-  ),
-  addBox: (
-    <svg {...svg}>
-      <path d="M11 20H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v5" strokeDasharray="3 2.5" />
-      <path d="M17.5 14.5v6M14.5 17.5h6" />
-    </svg>
-  ),
-  removeBox: (
-    <svg {...svg}>
-      <path d="M11 20H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v5" strokeDasharray="3 2.5" />
-      <path d="M14.5 17.5h6" />
-    </svg>
-  ),
-  reset: (
-    <svg {...svg}>
-      <path d="M4 12a8 8 0 1 0 2.6-5.9" />
-      <path d="M4 4v4.5h4.5" />
-    </svg>
-  ),
-  trash: (
-    <svg {...svg}>
-      <path d="M4 7h16M10 11v6M14 11v6M9 7V4h6v3M6 7l1 13h10l1-13" />
-    </svg>
-  ),
+  question: <FilePlus {...icon} />,
+  context: <ListPlus {...icon} />,
+  addBox: <SquarePlus {...icon} />,
+  removeBox: <SquareMinus {...icon} />,
+  reset: <RotateCcw {...icon} />,
+  trash: <Trash2 {...icon} />,
 };
 
 function ToolButton({ label, hint, icon, onClick, disabled, danger }: Tool) {

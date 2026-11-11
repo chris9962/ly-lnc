@@ -1,5 +1,6 @@
 "use client";
 
+import { Ellipsis, Folder, FolderOpen } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, type FormEvent } from "react";
@@ -19,11 +20,8 @@ type Editing = { mode: "create"; parentId: number | null; parentName?: string } 
 const row = "flex min-h-9 items-center gap-2 rounded-lg pr-1 no-underline";
 
 function FolderIcon({ open }: { open?: boolean }) {
-  return (
-    <svg aria-hidden="true" viewBox="0 0 20 20" className="size-4 shrink-0">
-      <path d={open ? "M2 6a2 2 0 0 1 2-2h3l2 2h7a2 2 0 0 1 2 2v1H5l-3 7z" : "M2 6a2 2 0 0 1 2-2h3l2 2h7a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2z"} fill="currentColor" opacity="0.85" />
-    </svg>
-  );
+  const Icon = open ? FolderOpen : Folder;
+  return <Icon aria-hidden="true" className="size-4 shrink-0" />;
 }
 
 export function FolderTree({ nodes, current, hrefFor, allHref, total }: Props) {
@@ -117,11 +115,7 @@ export function FolderTree({ nodes, current, hrefFor, allHref, total }: Props) {
                   onClick={() => setMenuFor(menuFor === node.id ? null : node.id)}
                   className="grid size-7 shrink-0 cursor-pointer place-items-center rounded-md text-inherit hover:bg-black/10"
                 >
-                  <svg aria-hidden="true" viewBox="0 0 20 20" className="size-4">
-                    <circle cx="4" cy="10" r="1.6" fill="currentColor" />
-                    <circle cx="10" cy="10" r="1.6" fill="currentColor" />
-                    <circle cx="16" cy="10" r="1.6" fill="currentColor" />
-                  </svg>
+                  <Ellipsis aria-hidden="true" className="size-4" />
                 </button>
               </div>
               {menuFor === node.id && (

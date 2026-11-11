@@ -1,5 +1,6 @@
 "use client";
 
+import { Search, X } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useId, useRef, useState, useTransition } from "react";
 import { cx } from "./cx";
@@ -90,10 +91,7 @@ export function FilterBar({ path, searchLabel, q, selects = [], values = {}, kee
             {searchLabel}
           </label>
           <div className="relative">
-            <svg aria-hidden="true" viewBox="0 0 20 20" className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted">
-              <circle cx="8.5" cy="8.5" r="5.5" fill="none" stroke="currentColor" strokeWidth="2" />
-              <path d="M13 13l4 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-            </svg>
+            <Search aria-hidden="true" className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted" />
             <input
               ref={search}
               id={searchId}
@@ -135,9 +133,7 @@ export function FilterBar({ path, searchLabel, q, selects = [], values = {}, kee
         </p>
         {active && (
           <button type="button" onClick={clear} className="inline-flex cursor-pointer items-center gap-1.5 rounded-md px-2 py-1 font-semibold text-brand hover:bg-surface-alt">
-            <svg aria-hidden="true" viewBox="0 0 20 20" className="size-3.5" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
-              <path d="M5 5l10 10M15 5L5 15" />
-            </svg>
+            <X aria-hidden="true" strokeWidth={2.4} className="size-3.5" />
             Xoá bộ lọc
           </button>
         )}

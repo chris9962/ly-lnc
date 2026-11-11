@@ -1,3 +1,4 @@
+import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { AutoRefresh } from "@/components/exams/AutoRefresh";
@@ -59,7 +60,8 @@ export default async function ExamPage({ params, searchParams }: Props) {
     <>
       {status === "running" && <AutoRefresh seconds={20} />}
       <nav aria-label="Vị trí" className="mb-2 text-sm">
-        <Link href="/exams" className="text-muted hover:text-brand">
+        <Link href="/exams" className="inline-flex items-center gap-1.5 text-muted hover:text-brand">
+          <ArrowLeft aria-hidden="true" className="size-4" />
           Kỳ thi
         </Link>
       </nav>

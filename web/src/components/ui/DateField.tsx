@@ -1,5 +1,6 @@
 "use client";
 
+import { Calendar } from "lucide-react";
 import { useId, useRef, useState, type ChangeEvent } from "react";
 import { isoToVn, maskVnDate, parseVnDate } from "@/lib/dateRange";
 import { cx } from "./cx";
@@ -74,10 +75,7 @@ export function DateField({ label, value, onChange, className }: Props) {
           aria-label={`${label} trên lịch`}
           className="absolute right-1 top-1/2 flex size-8 -translate-y-1/2 cursor-pointer items-center justify-center rounded-md text-muted hover:bg-surface-alt hover:text-ink"
         >
-          <svg aria-hidden="true" viewBox="0 0 20 20" className="size-4" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
-            <rect x="3" y="4.5" width="14" height="12.5" rx="2" />
-            <path d="M3 8.5h14M7 3v3M13 3v3" />
-          </svg>
+          <Calendar aria-hidden="true" className="size-4" />
         </button>
         <input ref={picker} type="date" tabIndex={-1} aria-hidden="true" onChange={pick} className="pointer-events-none absolute bottom-0 right-0 h-px w-px opacity-0" />
       </div>

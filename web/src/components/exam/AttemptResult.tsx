@@ -1,3 +1,4 @@
+import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { buttonClass } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
@@ -21,7 +22,8 @@ export function AttemptResult({ view, backHref, backLabel }: Props) {
   return (
     <div className="mx-auto max-w-4xl px-4 py-6">
       <nav aria-label="Vị trí" className="mb-3 text-sm">
-        <Link href={backHref} className="text-muted hover:text-brand">
+        <Link href={backHref} className="inline-flex items-center gap-1.5 text-muted hover:text-brand">
+          <ArrowLeft aria-hidden="true" className="size-4" />
           {backLabel}
         </Link>
       </nav>
@@ -67,6 +69,7 @@ export function AttemptResult({ view, backHref, backLabel }: Props) {
         {attempt.isPractice && (
           <div className="mt-4 flex gap-2">
             <Link href={`/papers/${paper.id}`} className={buttonClass("secondary")}>
+              <ArrowLeft aria-hidden="true" className="size-4" />
               Về trang đề
             </Link>
           </div>

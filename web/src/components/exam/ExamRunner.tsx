@@ -1,5 +1,6 @@
 "use client";
 
+import { ChevronLeft, ChevronRight, Flag } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/Button";
@@ -241,9 +242,7 @@ export function ExamRunner({ view }: { view: AttemptView }) {
                   flags.includes(question.seq) ? "border-warning bg-warning-soft font-semibold text-warning" : "border-line text-ink hover:bg-surface-alt",
                 )}
               >
-                <svg aria-hidden="true" viewBox="0 0 20 20" className="size-4">
-                  <path d="M5 2v16M5 3h9l-2 3.5L14 10H5" fill={flags.includes(question.seq) ? "currentColor" : "none"} stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
-                </svg>
+                <Flag aria-hidden="true" className="size-4" fill={flags.includes(question.seq) ? "currentColor" : "none"} />
                 {flags.includes(question.seq) ? "Đã đánh dấu xem lại" : "Đánh dấu xem lại"}
               </button>
             </div>
@@ -266,10 +265,12 @@ export function ExamRunner({ view }: { view: AttemptView }) {
             </section>
             <div className="mt-6 flex gap-3">
               <Button className="flex-1" onClick={() => go(index - 1)} disabled={index === 0}>
+                <ChevronLeft aria-hidden="true" className="size-4" />
                 Câu trước
               </Button>
               <Button variant="primary" className="flex-1" onClick={() => go(index + 1)} disabled={index === questions.length - 1}>
                 Câu sau
+                <ChevronRight aria-hidden="true" className="size-4" />
               </Button>
             </div>
           </div>

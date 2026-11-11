@@ -1,5 +1,6 @@
 "use client";
 
+import { Plus, X } from "lucide-react";
 import { cx } from "@/components/ui/cx";
 import { fieldClass } from "@/components/ui/fieldClass";
 import { FALSE, TRUE, itemLabel, letter, type AnswerValue, type PaperFormat, type QuestionShape } from "@/lib/paperLayout";
@@ -49,9 +50,7 @@ export function AnswerInput({ shape, value, onChange, format, name, disabled, la
                     className="group/tip absolute -right-3 -top-3 flex size-6 cursor-pointer items-center justify-center"
                   >
                     <span className="flex size-4 items-center justify-center rounded-full border border-line bg-surface text-muted group-hover/tip:border-danger group-hover/tip:bg-danger group-hover/tip:text-surface">
-                      <svg aria-hidden="true" viewBox="0 0 12 12" className="size-2.5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
-                        <path d="M3 3l6 6M9 3L3 9" />
-                      </svg>
+                      <X aria-hidden="true" strokeWidth={3} className="size-2.5" />
                     </span>
                     <span role="tooltip" className={tip}>
                       Xoá lựa chọn {option}
@@ -69,9 +68,7 @@ export function AnswerInput({ shape, value, onChange, format, name, disabled, la
             onClick={onAddOption}
             className="group/tip relative inline-flex h-10 min-w-11 cursor-pointer items-center justify-center rounded-lg border-2 border-dashed border-line text-muted hover:border-brand hover:text-brand"
           >
-            <svg aria-hidden="true" viewBox="0 0 16 16" className="size-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-              <path d="M8 3v10M3 8h10" />
-            </svg>
+            <Plus aria-hidden="true" strokeWidth={2.4} className="size-4" />
             <span role="tooltip" className={tip}>
               Thêm lựa chọn {letter(shape.options)}
             </span>

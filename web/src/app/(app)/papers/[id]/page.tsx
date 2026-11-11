@@ -1,3 +1,4 @@
+import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { QuestionImage } from "@/components/exam/QuestionImage";
@@ -34,7 +35,8 @@ export default async function PaperPage({ params }: Props) {
   return (
     <>
       <nav aria-label="Vị trí" className="mb-2 text-sm">
-        <Link href="/papers" className="text-muted hover:text-brand">
+        <Link href="/papers" className="inline-flex items-center gap-1.5 text-muted hover:text-brand">
+          <ArrowLeft aria-hidden="true" className="size-4" />
           Ngân hàng đề
         </Link>
         {paper.folderId && (

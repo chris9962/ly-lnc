@@ -1,5 +1,6 @@
 "use client";
 
+import { ArrowLeft, ChevronLeft, ChevronRight } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -233,11 +234,13 @@ export function PaperEditor({ paperId, title, version: initialVersion, format: i
     <div>
       <div className="sticky top-(--header-h) z-30 flex h-14 items-center gap-3 border-b border-line bg-surface px-4">
         {dirty ? (
-          <button type="button" onClick={() => setConfirm("leave")} className="cursor-pointer text-sm text-muted hover:text-brand">
+          <button type="button" onClick={() => setConfirm("leave")} className="inline-flex cursor-pointer items-center gap-1.5 text-sm text-muted hover:text-brand">
+            <ArrowLeft aria-hidden="true" className="size-4" />
             Về trang đề
           </button>
         ) : (
-          <Link href={`/papers/${paperId}`} className="text-sm text-muted hover:text-brand">
+          <Link href={`/papers/${paperId}`} className="inline-flex items-center gap-1.5 text-sm text-muted hover:text-brand">
+            <ArrowLeft aria-hidden="true" className="size-4" />
             Về trang đề
           </Link>
         )}
@@ -460,10 +463,12 @@ export function PaperEditor({ paperId, title, version: initialVersion, format: i
               {selected.type === "question" && (
                 <div className="mt-1 flex gap-2">
                   <Button className="flex-1" onClick={() => step(-1)} disabled={questions.indexOf(selected) <= 0}>
+                    <ChevronLeft aria-hidden="true" className="size-4" />
                     Câu trước
                   </Button>
                   <Button className="flex-1" onClick={() => step(1)} disabled={questions.indexOf(selected) >= questions.length - 1}>
                     Câu sau
+                    <ChevronRight aria-hidden="true" className="size-4" />
                   </Button>
                 </div>
               )}
