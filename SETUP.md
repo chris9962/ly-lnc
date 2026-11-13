@@ -277,7 +277,7 @@ Chủ dự án yêu cầu không chạy E2E sau từng thay đổi nhỏ. Chỉ 
 - Tắt chế độ ngủ của Windows. Đặt giờ hoạt động cho Windows Update để máy không tự khởi động lại trong giờ thi.
 - Bật máy và chạy `start.bat` trước giờ thi. Không có tiến trình chạy nền nào khác.
 - Bảo học sinh đăng nhập trước giờ mở đề vài phút. Đăng nhập dồn cùng lúc với mở đề là lúc máy chủ nặng nhất.
-- Bài làm tự lưu từng câu. Mất điện hoặc mất mạng thì khi máy chủ lên lại, giáo viên dùng nút "Gia hạn" hoặc "Cho thi lại" ở trang kỳ thi.
+- Bài làm tự lưu từng câu. Mất điện hoặc mất mạng thì khi máy chủ lên lại, giáo viên gia hạn kỳ thi bằng cách sửa giờ kết thúc ở trang kỳ thi. Bài đang làm tự nhận hạn nộp mới. Học sinh đã nộp thì dùng nút "Cho thi lại" khi kỳ thi còn mở.
 
 ## 9. Việc chưa xong
 
@@ -285,7 +285,6 @@ Chủ dự án yêu cầu không chạy E2E sau từng thay đổi nhỏ. Chỉ 
 - Chưa có shortcut `start.bat` trên Desktop, chưa tự chạy khi mở máy.
 - Chưa có sao lưu tự động.
 - Tính năng chưa làm: nhiều mã đề cho một kỳ thi, chế độ xem nguyên PDF kèm phiếu trả lời.
-- Nút "Cho thi lại" hiện mở lại bài cũ để làm tiếp, giữ câu đã chọn. Chưa chốt có đổi thành làm lại từ đầu hay không.
 - Dữ liệu trên máy phát triển có 46 kỳ thi mẫu tên "Kiểm tra THPT tháng MM/YYYY" và "Thi thử VSAT tháng MM/YYYY" cùng đề "Thi thử VSAT đề 07", thêm ngày 2026-11-11 để xem giao diện. Bài làm mẫu chỉ có điểm, không có câu trả lời. Nếu chép `web/data/` sang máy thi thật thì cần xoá các kỳ thi này trước.
 
 ## 10. Quy trình setup máy prod

@@ -244,6 +244,16 @@ export function saveAnswer(user: SessionUser, attemptId: number, input: SaveAnsw
   });
 }
 
+// trang làm bài hỏi lại hạn nộp, vì giáo viên có thể gia hạn kỳ thi khi học sinh đang làm
+export function attemptStatus(user: SessionUser, attemptId: number): Result<{ deadline: number | null; submitted: boolean; now: number }> {
+  return getDb().transaction((tx): Result<{ deadline: number | null; submitted: boolean; now: number }> => {
+    if (Number.isInteger(attemptId)) finalizeOverdue(tx, { attemptId });
+    const attempt = ownAttempt(tx, user, attemptId);
+    if (!attempt) return NOT_FOUND;
+    return ok({ deadline: attempt.deadline, submitted: attempt.submittedAt !== null, now: Date.now() });
+  });
+}
+
 export function submitAttempt(user: SessionUser, attemptId: number): Result<{ score: number | null; maxScore: number }> {
   const now = Date.now();
   return getDb().transaction((tx): Result<{ score: number | null; maxScore: number }> => {

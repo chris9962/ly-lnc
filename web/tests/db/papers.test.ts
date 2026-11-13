@@ -6,6 +6,7 @@ import { getDb } from "@/server/db";
 import { paperQuestions, papers } from "@/server/db/schema";
 import { createFolder, deleteFolder, listFolders, renameFolder } from "@/server/folders";
 import { defaultLayout, deletePaper, getPaper, listPapers, pageImage, paperImage, paperOptions, savePaperLayout, updatePaperMeta, uploadPaper } from "@/server/papers";
+import { holdPaper } from "@/server/paperLocks";
 import { getObject, paperKeys } from "@/server/storage";
 import { adminUser, auditActions, makeUser } from "./helpers";
 
@@ -152,6 +153,31 @@ describe("defaultLayout", () => {
 });
 
 describe("savePaperLayout", () => {
+  it("hai lần lưu cùng lúc: một lần được, ảnh của bản mới vẫn còn", async () => {
+    const id = await upload(0);
+    const before = getPaper(teacher, id);
+    if (!before.ok) throw new Error();
+    const items = before.questions.map((question) => ({ type: "question" as const, label: question.label, shape: question.shape, key: question.answerKey ?? null, boxes: question.boxes }));
+    const version = before.paper.imageVersion;
+    const results = await Promise.all([savePaperLayout(teacher, id, { format: "thpt", items }, version), savePaperLayout(teacher, id, { format: "thpt", items }, version)]);
+    expect(results.filter((result) => result.ok)).toHaveLength(1);
+    expect(results.find((result) => !result.ok)).toMatchObject({ status: 409 });
+    const after = getPaper(teacher, id);
+    if (!after.ok) throw new Error();
+    expect(after.paper.imageVersion).toBe(version + 1);
+    expect(await getObject(paperKeys.question(id, version + 1, 1))).not.toBeNull();
+  }, 60000);
+
+  it("đề đang có người khác giữ thì không lưu được", async () => {
+    const id = await upload(0);
+    const before = getPaper(teacher, id);
+    if (!before.ok) throw new Error();
+    const items = before.questions.map((question) => ({ type: "question" as const, label: question.label, shape: question.shape, key: question.answerKey ?? null, boxes: question.boxes }));
+    expect(holdPaper(id, { userId: 999, name: "Cô Khác", token: "tab-khac" }, Date.now())).toEqual({ ok: true });
+    expect(await savePaperLayout(teacher, id, { format: "thpt", items }, before.paper.imageVersion, "tab-toi")).toMatchObject({ ok: false, status: 409 });
+    expect(await savePaperLayout(teacher, id, { format: "thpt", items }, before.paper.imageVersion, "tab-khac")).toMatchObject({ ok: true });
+  }, 60000);
+
   it("lưu khung và đáp án, cắt lại ảnh, xoá ảnh cũ", async () => {
     const id = await upload(3);
     const before = getPaper(teacher, id);

@@ -121,6 +121,23 @@ test("sửa đáp án trong trình chỉnh rồi lưu", async ({ browser }) => {
   await page.close();
 });
 
+test("đề đang có người chỉnh thì người khác không mở trình chỉnh được", async ({ browser }) => {
+  const first = await asAdmin(browser);
+  await first.goto(`/papers/${state.paperId}/edit`);
+  await first.getByRole("button", { name: /^Câu 1\b/ }).first().click();
+
+  const second = await asAdmin(browser);
+  await second.goto(`/papers/${state.paperId}/edit`);
+  await expect(second.getByRole("alertdialog")).toContainText("đang chỉnh đề này");
+  await expect(second.getByRole("alertdialog").getByRole("link", { name: "Về trang đề" })).toBeVisible();
+
+  // người giữ rời trang thì người chờ tự được vào
+  await first.close();
+  await expect(second.getByRole("alertdialog")).toHaveCount(0, { timeout: 25000 });
+  await second.getByRole("button", { name: /^Câu 1\b/ }).first().click();
+  await second.close();
+});
+
 test("đặt lại khung về kết quả cắt tự động, giữ đáp án", async ({ browser }) => {
   const page = await asAdmin(browser);
   await page.goto(`/papers/${state.paperId}/edit`);
@@ -246,8 +263,7 @@ test("giáo viên thấy bài đã nộp, cho học sinh thi lại và tải b�
   expect(download.headers()["content-type"]).toContain("spreadsheetml");
 
   await row.getByRole("button", { name: "Cho thi lại" }).click();
-  await expect(page.getByRole("dialog")).toContainText("Cho Hoc Sinh Thi thi lại?");
-  await page.getByRole("dialog").getByLabel("Số phút làm tiếp").fill("10");
+  await expect(page.getByRole("dialog")).toContainText("Xoá bài đã nộp và cho Hoc Sinh Thi thi lại từ đầu?");
   await page.getByRole("dialog").getByRole("button", { name: "Cho thi lại" }).click();
   await expect(row).toContainText("Đang làm");
   await page.close();

@@ -11,7 +11,7 @@ export async function PUT(request: NextRequest, { params }: Context) {
   if (user instanceof NextResponse) return user;
   const body = await parseBody(request, saveLayoutForm);
   if ("response" in body) return body.response;
-  const { baseVersion, ...layout } = body.data;
+  const { baseVersion, lockToken, ...layout } = body.data;
 
-  return respond(await savePaperLayout(user, Number((await params).id), layout, baseVersion));
+  return respond(await savePaperLayout(user, Number((await params).id), layout, baseVersion, lockToken));
 }

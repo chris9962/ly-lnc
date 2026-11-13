@@ -1,8 +1,8 @@
 import fs from "node:fs";
 import path from "node:path";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
-import { getAttemptView, myExams, saveAnswer, startAttempt, startPractice, submitAttempt } from "@/server/attempts";
-import { createExam, deleteExam, examRoster, listExams, reopenAttempt, updateExam } from "@/server/exams";
+import { attemptStatus, getAttemptView, myExams, saveAnswer, startAttempt, startPractice, submitAttempt } from "@/server/attempts";
+import { createExam, deleteExam, examRoster, listExams, retakeAttempt, updateExam } from "@/server/exams";
 import { deletePaper, getPaper, paperImage, savePaperLayout, uploadPaper } from "@/server/papers";
 import { auditActions, makeUser } from "./helpers";
 
@@ -14,6 +14,7 @@ type Session = Awaited<ReturnType<typeof makeUser>>["session"];
 let teacher: Session;
 let student: Session;
 let other: Session;
+let classmate: Session;
 let keyedPaper: number;
 let blankPaper: number;
 
@@ -24,6 +25,7 @@ beforeAll(async () => {
   teacher = (await makeUser("teacher", "Thầy Bình")).session;
   student = (await makeUser("student", "Trò Giỏi", 12)).session;
   other = (await makeUser("student", "Trò Khối Khác", 10)).session;
+  classmate = (await makeUser("student", "Trò Cùng Lớp", 12)).session;
   const keyed = await uploadPaper(teacher, { title: "Ôn tập chương 1", grade: 12, folderId: null }, pdf(2), templates[2]);
   const blank = await uploadPaper(teacher, { title: "VSAT chưa đáp án", grade: 12, folderId: null }, pdf(3), templates[3]);
   if (!keyed.ok || !blank.ok) throw new Error("upload");
@@ -102,7 +104,7 @@ describe("làm bài", () => {
     expect(auditActions(begun.attemptId)).toEqual(expect.arrayContaining(["attempt.start", "attempt.answer", "attempt.submit"]));
   });
 
-  it("hết giờ thì máy chủ tự nộp, giáo viên mở lại được", () => {
+  it("hết giờ thì máy chủ tự nộp, giáo viên cho thi lại khi kỳ thi còn mở", () => {
     vi.useFakeTimers({ toFake: ["Date"] });
     const start = Date.UTC(2026, 10, 13, 1, 0);
     at(start);
@@ -119,13 +121,57 @@ describe("làm bài", () => {
     expect(roster.rows.find((row) => row.userId === student.id)).toMatchObject({ status: "submitted", score: 0.25 });
     expect(auditActions(begun.attemptId)).toContain("attempt.auto_submit");
 
-    expect(reopenAttempt(student, begun.attemptId, 10)).toMatchObject({ status: 403 });
-    expect(reopenAttempt(teacher, begun.attemptId, 15).ok).toBe(true);
+    // cho thi lại: làm lại từ đầu, đủ thời gian làm bài, bài cũ bị xoá
+    expect(retakeAttempt(student, begun.attemptId)).toMatchObject({ status: 403 });
+    expect(retakeAttempt(teacher, begun.attemptId).ok).toBe(true);
     const view = getAttemptView(student, begun.attemptId);
     if (!view.ok) throw new Error();
-    expect(view.attempt).toMatchObject({ submittedAt: null, deadline: start + 26 * MINUTE });
-    expect(view.answers[1]).toBe("D");
+    expect(view.attempt).toMatchObject({ submittedAt: null, startedAt: start + 11 * MINUTE, deadline: start + 21 * MINUTE });
+    expect(view.answers[1]).toBeUndefined();
     expect(saveAnswer(student, begun.attemptId, { seq: 2, value: "C" }).ok).toBe(true);
+    // bài đang làm thì không cho thi lại
+    expect(retakeAttempt(teacher, begun.attemptId)).toMatchObject({ ok: false, status: 400 });
+
+    // sát giờ kết thúc thì hạn nộp không vượt giờ kết thúc kỳ thi
+    at(start + 22 * MINUTE);
+    examRoster(teacher, created.id);
+    at(start + 115 * MINUTE);
+    expect(retakeAttempt(teacher, begun.attemptId).ok).toBe(true);
+    const late = getAttemptView(student, begun.attemptId);
+    expect(late.ok && late.attempt.deadline).toBe(start + 120 * MINUTE);
+
+    // kỳ thi kết thúc rồi thì không cho thi lại
+    at(start + 121 * MINUTE);
+    examRoster(teacher, created.id);
+    expect(retakeAttempt(teacher, begun.attemptId)).toMatchObject({ ok: false, status: 400 });
+  });
+
+  it("gia hạn kỳ thi dời hạn nộp của bài đang làm, bài đã nộp giữ nguyên", () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    const start = Date.UTC(2026, 10, 14, 1, 0);
+    at(start);
+    const base = { title: "Gia hạn", grade: 12 as const, paperId: keyedPaper, durationMinutes: 60, startsAt: null };
+    const created = createExam(teacher, { ...base, endsAt: start + 30 * MINUTE });
+    if (!created.ok) throw new Error(created.message);
+    const working = startAttempt(student, created.id);
+    const done = startAttempt(classmate, created.id);
+    if (!working.ok || !done.ok) throw new Error();
+    expect(submitAttempt(classmate, done.attemptId).ok).toBe(true);
+    const deadlineOf = (who: Session, id: number) => {
+      const view = getAttemptView(who, id);
+      return view.ok ? view.attempt.deadline : null;
+    };
+    expect(deadlineOf(student, working.attemptId)).toBe(start + 30 * MINUTE);
+
+    at(start + 5 * MINUTE);
+    expect(updateExam(teacher, created.id, { ...base, endsAt: start + 90 * MINUTE }).ok).toBe(true);
+    expect(deadlineOf(student, working.attemptId)).toBe(start + 60 * MINUTE);
+    expect(deadlineOf(classmate, done.attemptId)).toBe(start + 30 * MINUTE);
+    expect(attemptStatus(student, working.attemptId)).toMatchObject({ ok: true, deadline: start + 60 * MINUTE, submitted: false });
+    expect(attemptStatus(classmate, working.attemptId)).toMatchObject({ ok: false, status: 404 });
+
+    expect(updateExam(teacher, created.id, { ...base, endsAt: start + 20 * MINUTE }).ok).toBe(true);
+    expect(deadlineOf(student, working.attemptId)).toBe(start + 20 * MINUTE);
   });
 
   it("kỳ thi chưa tới giờ thì chưa vào được", () => {

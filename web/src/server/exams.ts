@@ -1,5 +1,5 @@
 import "server-only";
-import { and, asc, count, desc, eq, gt, inArray, isNotNull, like, lte, or, sql, type SQL } from "drizzle-orm";
+import { and, asc, count, desc, eq, gt, inArray, isNotNull, isNull, like, lte, or, sql, type SQL } from "drizzle-orm";
 import type { CreateExamInput, ListExamsQuery } from "@/lib/examForm";
 import { PAGE_SIZE } from "@/lib/paperForm";
 import { can, type SessionUser } from "@/lib/permissions";
@@ -7,7 +7,7 @@ import { searchKey } from "@/lib/username";
 import { finalizeOverdue } from "./attempts";
 import { writeAudit } from "./audit";
 import { getDb, type Reader, type Tx } from "./db";
-import { attempts, examPapers, exams, papers, users } from "./db/schema";
+import { attemptAnswers, attempts, examPapers, exams, papers, users } from "./db/schema";
 import { fail, FORBIDDEN, NOT_FOUND, ok, type Result } from "./result";
 
 export type ExamStatus = "upcoming" | "running" | "ended";
@@ -119,6 +119,10 @@ export function updateExam(user: SessionUser, id: number, input: CreateExamInput
     if (input.endsAt <= startsAt) return fail("Giờ kết thúc phải sau giờ bắt đầu", 400, "endTime");
     tx.update(exams).set({ title: input.title, searchTitle: searchKey(input.title), grade: input.grade, startsAt, endsAt: input.endsAt, durationMinutes: input.durationMinutes }).where(eq(exams.id, id)).run();
     if (input.paperId !== currentPaper) tx.update(examPapers).set({ paperId: input.paperId }).where(eq(examPapers.examId, id)).run();
+    // gia hạn hay rút ngắn kỳ thi thì bài đang làm phải theo giờ mới
+    for (const attempt of tx.select({ id: attempts.id, startedAt: attempts.startedAt }).from(attempts).where(and(eq(attempts.examId, id), isNull(attempts.submittedAt))).all()) {
+      tx.update(attempts).set({ deadline: Math.min(attempt.startedAt + input.durationMinutes * 60_000, input.endsAt) }).where(eq(attempts.id, attempt.id)).run();
+    }
     writeAudit(tx, user, "exam.update", { type: "exam", id }, { from: { ...exam, paperId: currentPaper }, to: { ...input, startsAt } });
     return ok();
   });
@@ -197,17 +201,24 @@ export function examRoster(user: SessionUser, id: number): Result<{ rows: Roster
   return ok({ rows });
 }
 
-export function reopenAttempt(user: SessionUser, attemptId: number, minutes: number): Result {
+// thi lại là làm lại từ đầu: xoá bài cũ, tính lại giờ, hạn nộp không vượt giờ kết thúc kỳ thi
+export function retakeAttempt(user: SessionUser, attemptId: number): Result {
   if (!can(user, "exams.manage")) return FORBIDDEN;
   const now = Date.now();
   return getDb().transaction((tx): Result => {
+    if (!Number.isInteger(attemptId)) return NOT_FOUND;
+    finalizeOverdue(tx, { attemptId });
     const attempt = tx.select().from(attempts).where(and(eq(attempts.id, attemptId), isNotNull(attempts.examId))).get();
-    if (!attempt) return NOT_FOUND;
+    const exam = attempt && tx.select().from(exams).where(eq(exams.id, attempt.examId!)).get();
+    if (!attempt || !exam) return NOT_FOUND;
+    if (attempt.submittedAt === null) return fail("Học sinh chưa nộp bài", 400);
+    if (now >= exam.endsAt) return fail("Kỳ thi đã kết thúc", 400);
+    tx.delete(attemptAnswers).where(eq(attemptAnswers.attemptId, attemptId)).run();
     tx.update(attempts)
-      .set({ submittedAt: null, score: null, deadline: now + minutes * 60_000, reopenCount: attempt.reopenCount + 1 })
+      .set({ submittedAt: null, score: null, startedAt: now, deadline: Math.min(now + exam.durationMinutes * 60_000, exam.endsAt), reopenCount: attempt.reopenCount + 1 })
       .where(eq(attempts.id, attemptId))
       .run();
-    writeAudit(tx, user, "attempt.reopen", { type: "attempt", id: attemptId }, { minutes, previousScore: attempt.score, userId: attempt.userId });
+    writeAudit(tx, user, "attempt.retake", { type: "attempt", id: attemptId }, { previousScore: attempt.score, userId: attempt.userId });
     return ok();
   });
 }

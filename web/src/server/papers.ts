@@ -10,6 +10,7 @@ import { writeAudit } from "./audit";
 import { getDb, type Reader, type Tx } from "./db";
 import { attempts, examPapers, folders, paperContexts, paperQuestions, papers, users } from "./db/schema";
 import { folderExists } from "./folders";
+import { heldMessage, lockHolder } from "./paperLocks";
 import { rescorePaper } from "./grading";
 import { renderPageWebp, renderToStorage } from "./pdf/images";
 import { analyzePdf, openPdf, pageSizes, type Analysis, type PdfDocument } from "./pdf/layout";
@@ -302,49 +303,67 @@ export function updatePaperMeta(user: SessionUser, id: number, meta: PaperMetaIn
 
 const sameStructure = (a: QuestionShape[], b: QuestionShape[]) => a.length === b.length && a.every((shape, index) => JSON.stringify(shape) === JSON.stringify(b[index]));
 
-export async function savePaperLayout(user: SessionUser, id: number, input: PaperLayoutInput, baseVersion: number): Promise<Result<{ rescored: number }>> {
+// mỗi đề chỉ một lượt lưu chạy tại một thời điểm, vì cắt ảnh mất vài giây và ghi vào cùng thư mục phiên bản
+const saving = new Set<number>();
+
+function structureProblem(tx: Reader, id: number, shapes: QuestionShape[]): Result | null {
+  if (!usage(tx, id).lockedByAttempts) return null;
+  const current = tx.select({ shape: paperQuestions.shape }).from(paperQuestions).where(eq(paperQuestions.paperId, id)).orderBy(asc(paperQuestions.seq)).all();
+  if (sameStructure(current.map((row) => row.shape), shapes)) return null;
+  return fail("Đề đã có học sinh làm bài nên chỉ sửa được khung và đáp án, không đổi số câu hay loại câu", 409);
+}
+
+export async function savePaperLayout(user: SessionUser, id: number, input: PaperLayoutInput, baseVersion: number, lockToken?: string): Promise<Result<{ rescored: number }>> {
   if (!can(user, "papers.manage")) return FORBIDDEN;
   const paper = paperRow(id);
   if (!paper) return NOT_FOUND;
+  const holder = lockHolder(id, Date.now());
+  if (holder && holder.token !== lockToken) return fail(heldMessage(holder.name), 409);
+  if (saving.has(id)) return fail("Đề đang được lưu, thử lại sau ít giây", 409);
   const stale = fail("Đề vừa được lưu ở nơi khác, tải lại trang để lấy bản mới", 409);
   if (baseVersion !== paper.imageVersion) return stale;
   const layout = materialize(input.items);
   if (input.items.some((item) => item.boxes.some((box) => box.page >= paper.pageSizes.length))) return fail("Khung nằm ngoài số trang của đề", 400);
-
+  const shapes = layout.questions.map((question) => question.shape);
   const db = getDb();
-  if (usage(db, id).lockedByAttempts) {
-    const current = db.select({ shape: paperQuestions.shape }).from(paperQuestions).where(eq(paperQuestions.paperId, id)).orderBy(asc(paperQuestions.seq)).all();
-    if (!sameStructure(current.map((row) => row.shape), layout.questions.map((question) => question.shape)))
-      return fail("Đề đã có học sinh làm bài nên chỉ sửa được khung và đáp án, không đổi số câu hay loại câu", 409);
-  }
+  const problem = structureProblem(db, id, shapes);
+  if (problem) return problem as Result<{ rescored: number }>;
 
-  const source = await getObject(paperKeys.source(id));
-  if (!source) return fail("Không tìm thấy file PDF gốc của đề", 500);
+  saving.add(id);
   const version = paper.imageVersion + 1;
-  let rendered: Rendered;
   try {
-    rendered = await renderAll(openPdf(source), id, version, layout);
-  } catch {
-    deletePrefix(paperKeys.images(id, version));
-    return fail("Không cắt được ảnh từ các khung này", 500);
-  }
+    const source = await getObject(paperKeys.source(id));
+    if (!source) return fail("Không tìm thấy file PDF gốc của đề", 500);
+    let rendered: Rendered;
+    try {
+      rendered = await renderAll(openPdf(source), id, version, layout);
+    } catch {
+      deletePrefix(paperKeys.images(id, version));
+      return fail("Không cắt được ảnh từ các khung này", 500);
+    }
 
-  const result = db.transaction((tx): Result<{ rescored: number }> => {
-    // chỉ ghi khi chưa ai lưu chen vào trong lúc đang cắt ảnh
-    const claimed = tx.update(papers).set({ imageVersion: version }).where(and(eq(papers.id, id), eq(papers.imageVersion, paper.imageVersion))).run();
-    if (claimed.changes !== 1) return stale;
-    const counts = writeLayout(tx, id, rendered);
-    const formatChanged = input.format !== paper.format;
-    tx.update(papers)
-      .set({ ...counts, format: input.format, scoring: formatChanged ? DEFAULT_RULES[input.format] : paper.scoring, warnings: [], updatedAt: Date.now() })
-      .where(eq(papers.id, id))
-      .run();
-    const rescored = rescorePaper(tx, id);
-    writeAudit(tx, user, "paper.save_layout", { type: "paper", id }, { ...counts, format: input.format, rescored });
-    return ok({ rescored });
-  });
-  deletePrefix(paperKeys.images(id, result.ok ? paper.imageVersion : version));
-  return result;
+    const result = db.transaction((tx): Result<{ rescored: number }> => {
+      // có học sinh vừa vào thi trong lúc cắt ảnh thì kiểm lại trước khi ghi bất cứ gì
+      const lateProblem = structureProblem(tx, id, shapes);
+      if (lateProblem) return lateProblem as Result<{ rescored: number }>;
+      // chỉ ghi khi chưa ai lưu chen vào trong lúc đang cắt ảnh
+      const claimed = tx.update(papers).set({ imageVersion: version }).where(and(eq(papers.id, id), eq(papers.imageVersion, paper.imageVersion))).run();
+      if (claimed.changes !== 1) return stale;
+      const counts = writeLayout(tx, id, rendered);
+      const formatChanged = input.format !== paper.format;
+      tx.update(papers)
+        .set({ ...counts, format: input.format, scoring: formatChanged ? DEFAULT_RULES[input.format] : paper.scoring, warnings: [], updatedAt: Date.now() })
+        .where(eq(papers.id, id))
+        .run();
+      const rescored = rescorePaper(tx, id);
+      writeAudit(tx, user, "paper.save_layout", { type: "paper", id }, { ...counts, format: input.format, rescored });
+      return ok({ rescored });
+    });
+    deletePrefix(paperKeys.images(id, result.ok ? paper.imageVersion : version));
+    return result;
+  } finally {
+    saving.delete(id);
+  }
 }
 
 export function deletePaper(user: SessionUser, id: number): Result {

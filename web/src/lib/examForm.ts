@@ -47,10 +47,6 @@ export type CreateExamInput = z.infer<typeof createExamForm>;
 
 export const updateExamForm = createExamForm;
 
-export const reopenForm = z.object({
-  minutes: z.coerce.number({ error: "Nhập số phút" }).int("Nhập số phút").min(1, "Ít nhất 1 phút").max(MAX_DURATION, `Tối đa ${MAX_DURATION} phút`),
-});
-
 export const listExamsQuery = z.object({
   q: z.string().trim().max(MAX_TITLE).catch("").default(""),
   grade: z.coerce.number().refine(isGrade).optional().catch(undefined),

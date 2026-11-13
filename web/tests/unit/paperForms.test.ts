@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createExamForm, parseVnDateTime, reopenForm } from "@/lib/examForm";
+import { createExamForm, parseVnDateTime } from "@/lib/examForm";
 import { folderForm, listPapersQuery, paperLayoutForm, paperMetaForm } from "@/lib/paperForm";
 import { saveAnswerForm } from "@/lib/attemptForm";
 
@@ -98,13 +98,6 @@ describe("createExamForm", () => {
 
   it("thời lượng từ 1 đến 300 phút", () => {
     expect(createExamForm.safeParse({ ...base, mode: "scheduled", duration: "0" }).success).toBe(false);
-  });
-});
-
-describe("reopenForm", () => {
-  it("số phút cho thêm", () => {
-    expect(reopenForm.parse({ minutes: "15" })).toEqual({ minutes: 15 });
-    expect(reopenForm.safeParse({ minutes: "0" }).success).toBe(false);
   });
 });
 

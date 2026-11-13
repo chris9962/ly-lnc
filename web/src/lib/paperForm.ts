@@ -93,5 +93,9 @@ export const paperLayoutForm = z.object({
 
 export type PaperLayoutInput = z.infer<typeof paperLayoutForm>;
 
-export const saveLayoutForm = paperLayoutForm.extend({ baseVersion: z.number().int().min(1) });
+const lockToken = z.string().min(8).max(64);
+
+export const saveLayoutForm = paperLayoutForm.extend({ baseVersion: z.number().int().min(1), lockToken: lockToken.optional() });
+
+export const paperLockForm = z.object({ token: lockToken });
 export type LayoutQuestionInput = Extract<PaperLayoutInput["items"][number], { type: "question" }>;

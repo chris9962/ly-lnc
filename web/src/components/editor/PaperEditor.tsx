@@ -1,11 +1,11 @@
 "use client";
 
-import { ArrowLeft, ChevronLeft, ChevronRight } from "lucide-react";
+import { ArrowLeft, ChevronLeft, ChevronRight, Lock } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AnswerInput } from "@/components/exam/AnswerInput";
-import { Button } from "@/components/ui/Button";
+import { Button, buttonClass } from "@/components/ui/Button";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { cx } from "@/components/ui/cx";
 import { fieldClass } from "@/components/ui/fieldClass";
@@ -34,6 +34,7 @@ type ResetItem =
 type Notice = { tone: "success" | "danger"; text: string } | null;
 
 const small = "min-h-8 px-2.5 py-1 text-sm";
+const LOCK_HEARTBEAT_MS = 5000;
 
 export function PaperEditor({ paperId, title, version: initialVersion, format: initialFormat, pageSizes, initial, locked }: Props) {
   const router = useRouter();
@@ -47,6 +48,41 @@ export function PaperEditor({ paperId, title, version: initialVersion, format: i
   const [confirm, setConfirm] = useState<"remove" | "leave" | "reset" | null>(null);
   const [resetting, setResetting] = useState(false);
   const pagesRef = useRef<HTMLDivElement>(null);
+  const edits = useRef(0);
+  const lockToken = useRef("");
+  const [lock, setLock] = useState<{ state: "checking" | "held" } | { state: "blocked"; message: string }>({ state: "checking" });
+
+  // giữ đề khi đang mở trình chỉnh: báo máy chủ đều đặn, rời trang thì nhả
+  useEffect(() => {
+    const token = Array.from(crypto.getRandomValues(new Uint8Array(12)), (byte) => byte.toString(16).padStart(2, "0")).join("");
+    lockToken.current = token;
+    const url = `/api/papers/${paperId}/lock`;
+    let stopped = false;
+    let wasBlocked = false;
+    const hold = async () => {
+      const result = await callApi(url, "POST", { token });
+      if (stopped) return;
+      if (result.ok) {
+        // vừa được vào sau khi người khác nhả: lấy bản mới nhất vì họ có thể đã lưu
+        if (wasBlocked) router.refresh();
+        wasBlocked = false;
+        setLock((current) => (current.state === "held" ? current : { state: "held" }));
+      } else if (result.status === 409) {
+        wasBlocked = true;
+        setLock({ state: "blocked", message: result.message });
+      }
+    };
+    const release = () => void fetch(url, { method: "DELETE", headers: { "content-type": "application/json" }, body: JSON.stringify({ token }), keepalive: true }).catch(() => null);
+    void hold();
+    const timer = setInterval(() => void hold(), LOCK_HEARTBEAT_MS);
+    window.addEventListener("pagehide", release);
+    return () => {
+      stopped = true;
+      clearInterval(timer);
+      window.removeEventListener("pagehide", release);
+      release();
+    };
+  }, [paperId, router]);
 
   const list = useMemo(() => ordered(items), [items]);
   const { seq, contextOf, covered } = useMemo(() => numbering(list), [list]);
@@ -66,6 +102,7 @@ export function PaperEditor({ paperId, title, version: initialVersion, format: i
 
   function change(next: (items: EditorItem[]) => EditorItem[]) {
     setItems(next);
+    edits.current++;
     setDirty(true);
     setNotice(null);
   }
@@ -172,14 +209,16 @@ export function PaperEditor({ paperId, title, version: initialVersion, format: i
         ? { type: "context", count: item.count, boxes: plain(item.boxes) }
         : { type: "question", label: item.label, shape: item.shape, key: item.key, boxes: plain(item.boxes) },
     );
-    const result = await callApi<{ rescored: number }>(`/api/papers/${paperId}/layout`, "PUT", { format, items: payload, baseVersion: version });
+    const sent = edits.current;
+    const result = await callApi<{ rescored: number }>(`/api/papers/${paperId}/layout`, "PUT", { format, items: payload, baseVersion: version, lockToken: lockToken.current || undefined });
     setSaving(false);
     if (!result.ok) {
       setNotice({ tone: "danger", text: result.message });
       return;
     }
     setVersion(version + 1);
-    setDirty(false);
+    // sửa thêm trong lúc đang lưu thì phần đó vẫn chưa lưu
+    if (edits.current === sent) setDirty(false);
     // không tải lại trang để giữ nguyên câu đang chọn và vị trí cuộn
     setNotice({ tone: "success", text: result.rescored ? `Đã lưu và chấm lại ${result.rescored} bài` : "Đã lưu" });
   }
@@ -231,7 +270,8 @@ export function PaperEditor({ paperId, title, version: initialVersion, format: i
   const bounded = (value: number, [min, max]: readonly [number, number]) => Math.max(min, Math.min(max, value));
 
   return (
-    <div>
+    <>
+    <div inert={lock.state !== "held"}>
       <div className="sticky top-(--header-h) z-30 flex h-14 items-center gap-3 border-b border-line bg-surface px-4">
         {dirty ? (
           <button type="button" onClick={() => setConfirm("leave")} className="inline-flex cursor-pointer items-center gap-1.5 text-sm text-muted hover:text-brand">
@@ -324,6 +364,7 @@ export function PaperEditor({ paperId, title, version: initialVersion, format: i
                   disabled={locked}
                   onChange={(event) => {
                     setFormat(event.target.value as PaperFormat);
+                    edits.current++;
                     setDirty(true);
                   }}
                   className={cx(fieldClass(false), "flex-1 py-1 text-sm")}
@@ -545,5 +586,20 @@ export function PaperEditor({ paperId, title, version: initialVersion, format: i
         onClose={() => setConfirm(null)}
       />
     </div>
+      {lock.state === "blocked" && (
+        <div role="alertdialog" aria-labelledby="lock-title" className="fixed inset-0 z-50 grid place-items-center bg-overlay p-4">
+          <div className="w-full max-w-sm rounded-xl border border-line bg-surface p-6 text-center shadow-lg">
+            <Lock aria-hidden="true" className="mx-auto mb-3 size-8 text-muted" />
+            <h2 id="lock-title" className="mb-5 text-lg font-bold">
+              {lock.message}
+            </h2>
+            <Link href={`/papers/${paperId}`} className={buttonClass("primary")}>
+              <ArrowLeft aria-hidden="true" className="size-4" />
+              Về trang đề
+            </Link>
+          </div>
+        </div>
+      )}
+    </>
   );
 }

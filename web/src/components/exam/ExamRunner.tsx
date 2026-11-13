@@ -18,6 +18,7 @@ type Status = "saved" | "saving" | "retrying";
 const HINTS = { mcq: "Chọn một phương án", tf: "Mỗi ý chọn Đúng hoặc Sai", match: "Ghép mỗi ý với một chữ cái", short: "Gõ đáp án vào ô" } as const;
 const SHORT_DELAY_MS = 700;
 const RETRY_MS = 3000;
+const DEADLINE_POLL_MS = 20000;
 
 const pad = (value: number) => String(value).padStart(2, "0");
 const clock = (ms: number) => {
@@ -39,6 +40,7 @@ export function ExamRunner({ view }: { view: AttemptView }) {
   // lệch giữa đồng hồ máy học sinh và máy chủ, đo một lần lúc mở trang
   const [offset] = useState(() => view.now - Date.now());
   const [now, setNow] = useState(view.now);
+  const [deadline, setDeadline] = useState(attempt.deadline);
   const flagKey = `lnc:flags:${attempt.id}`;
   const [flags, setFlags] = useState<number[]>(() => {
     try {
@@ -57,7 +59,7 @@ export function ExamRunner({ view }: { view: AttemptView }) {
   const partOf = new Map(parts.flatMap((part) => part.questions.map((item) => [item.seq, part])));
   const contextImage = question.contextSeq !== null ? view.contexts.find((context) => context.seq === question.contextSeq) : undefined;
   const done = questions.filter((item) => isComplete(item.shape, answers[item.seq])).length;
-  const remaining = attempt.deadline === null ? null : attempt.deadline - now;
+  const remaining = deadline === null ? null : deadline - now;
 
   async function flush() {
     if (sending.current) return;
@@ -133,7 +135,8 @@ export function ExamRunner({ view }: { view: AttemptView }) {
     }
     timers.current.clear();
     await flush();
-    for (let tries = 0; queue.current.size && tries < 5; tries++) await wait(500);
+    // một câu đang gửi dở hoặc đang chờ gửi lại thì đợi nó xong rồi mới nộp
+    for (let tries = 0; (sending.current || queue.current.size) && tries < 24; tries++) await wait(250);
     const result = await callApi(`/api/attempts/${attempt.id}/submit`, "POST");
     if (!result.ok) {
       setSubmitting(false);
@@ -150,18 +153,44 @@ export function ExamRunner({ view }: { view: AttemptView }) {
   });
 
   // đồng hồ đếm theo giờ máy chủ, hết giờ thì tự nộp; không phụ thuộc lần vẽ lại để thao tác liên tục không làm đồng hồ đứng
-  const deadline = attempt.deadline;
   useEffect(() => {
+    let stopped = false;
+    // giáo viên có thể gia hạn kỳ thi khi học sinh đang làm, nên hỏi lại máy chủ hạn nộp mới nhất
+    const sync = async (): Promise<number | null | undefined> => {
+      try {
+        const response = await fetch(`/api/attempts/${attempt.id}/status`, { cache: "no-store" });
+        const latest = (await response.json()) as { ok: boolean; deadline?: number | null; submitted?: boolean };
+        if (stopped || !latest.ok) return undefined;
+        if (latest.submitted && !finished.current) {
+          finished.current = true;
+          router.refresh();
+        }
+        const value = latest.deadline ?? null;
+        setDeadline(value);
+        return value;
+      } catch {
+        return undefined;
+      }
+    };
     const timer = setInterval(() => {
       const serverNow = Date.now() + offset;
       setNow(serverNow);
       if (deadline !== null && serverNow >= deadline && !finished.current && !sending.current) {
         clearInterval(timer);
-        void submitRef.current();
+        // hỏi lại hạn nộp trước khi tự nộp; không hỏi được thì cứ nộp, máy chủ quyết định
+        void sync().then((latest) => {
+          if (stopped || finished.current) return;
+          if (latest === undefined || (latest !== null && latest <= Date.now() + offset)) void submitRef.current();
+        });
       }
     }, 1000);
-    return () => clearInterval(timer);
-  }, [offset, deadline]);
+    const poll = setInterval(() => void sync(), DEADLINE_POLL_MS);
+    return () => {
+      stopped = true;
+      clearInterval(timer);
+      clearInterval(poll);
+    };
+  }, [offset, deadline, attempt.id, router]);
 
   // còn câu chưa gửi được thì trình duyệt hỏi lại trước khi đóng tab
   useEffect(() => {

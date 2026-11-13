@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import { AutoRefresh } from "@/components/exams/AutoRefresh";
 import { ExamActions } from "@/components/exams/ExamActions";
 import { ExamStatusTag } from "@/components/exams/ExamStatusTag";
-import { ReopenButton } from "@/components/exams/ReopenButton";
+import { RetakeButton } from "@/components/exams/RetakeButton";
 import { Card } from "@/components/ui/Card";
 import { FilterBar } from "@/components/ui/FilterBar";
 import { hrefWith } from "@/components/ui/hrefWith";
@@ -202,7 +202,7 @@ export default async function ExamPage({ params, searchParams }: Props) {
                           <Link href={`/attempts/${row.attemptId}`} className="inline-flex min-h-8 items-center rounded-lg border border-line px-3 text-sm text-ink no-underline hover:bg-surface-alt">
                             Xem bài
                           </Link>
-                          <ReopenButton attemptId={row.attemptId} studentName={row.fullName} defaultMinutes={Math.min(exam.durationMinutes, 30)} submitted={row.status === "submitted"} />
+                          {row.status === "submitted" && status !== "ended" && <RetakeButton attemptId={row.attemptId} studentName={row.fullName} />}
                         </div>
                       )}
                     </td>
