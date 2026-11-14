@@ -114,3 +114,34 @@ describe("renderBoxes", () => {
     expect([...image.png.slice(1, 4)].map((code) => String.fromCharCode(code)).join("")).toBe("PNG");
   });
 });
+
+describe("analyzePdf trên đề viết lệch mẫu", () => {
+  const SEED_DIR = path.resolve(__dirname, "../../seed/papers");
+  const analyze = (name: string) => analyzePdf(openPdf(fs.readFileSync(path.join(SEED_DIR, name))));
+  const kindsOf = (result: ReturnType<typeof analyzePdf>) => {
+    const kinds: Record<string, number> = {};
+    for (const item of result.items) if (item.type === "question") kinds[item.kind ?? "?"] = (kinds[item.kind ?? "?"] ?? 0) + 1;
+    return kinds;
+  };
+  const contextCounts = (result: ReturnType<typeof analyzePdf>) => result.items.flatMap((item) => (item.type === "context" ? [item.count] : []));
+
+  it("nhận dòng Câu 8 thiếu dấu chấm sau số câu", () => {
+    const result = analyze("thpt-2026-de-13.pdf");
+    expect(kindsOf(result)).toEqual({ mcq: 18, tf: 4, short: 6 });
+    expect(result.warnings.filter((warning) => warning.includes("đứng sau"))).toEqual([]);
+  });
+
+  it("nhận phần đúng sai khi tiêu đề phần chỉ ghi các ý a), b), c), d)", () => {
+    expect(kindsOf(analyze("thpt-2026-de-16.pdf"))).toEqual({ mcq: 18, tf: 4, short: 6 });
+  });
+
+  it("nhận đoạn dẫn chung mở đầu bằng Số liệu dùng cho, Sử dụng dữ liệu cho", () => {
+    expect(contextCounts(analyze("thpt-2026-de-16.pdf"))).toEqual([2, 2, 2]);
+  });
+
+  it("đếm số câu của đoạn dẫn theo số đứng sau chữ câu, bỏ qua số khác trên dòng", () => {
+    expect(contextCounts(analyze("thpt-2026-de-02.pdf"))).toEqual([2, 2, 2, 2]);
+    expect(contextCounts(analyze("vsat-2027-de-08.pdf"))).toEqual([2, 2, 2]);
+    expect(contextCounts(analyze("vsat-2027-de-01.pdf"))).toEqual([3, 3, 2]);
+  });
+});

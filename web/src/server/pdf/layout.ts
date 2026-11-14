@@ -16,11 +16,13 @@ export type Analysis = {
   tailText: string;
 };
 
-// sau số câu có thể có ghi chú nguồn trong ngoặc vuông, ví dụ "Câu 6 [VSAT đợt 6-2026]."
-const RE_QUESTION = /^\s*Câu\s*(\d+)\s*(?:\[[^\]]*\]\s*)?[.:]/u;
+// sau số câu có thể có ghi chú nguồn trong ngoặc vuông, ví dụ "Câu 6 [VSAT đợt 6-2026]."; đề gõ thiếu dấu chấm thì chữ kế tiếp phải viết hoa
+const RE_QUESTION = /^\s*Câu\s*(\d+)\s*(?:\[[^\]]*\]\s*)?(?:[.:]|(?<=\s)(?=\p{Lu}))/u;
 const RE_PART = /^\s*PHẦN\s+([IVX]+)/u;
 const RE_RANGE = /^\s*Từ câu hỏi\s*(\d+)\s*đến\s*(\d+)/u;
-const RE_CONTEXT = /^\s*((Sử dụng|Dùng)( các)? thông tin sau|Đọc nội dung sau)/u;
+const RE_CONTEXT = /^\s*((Sử dụng|Dùng)( các)? (thông tin|dữ liệu|dữ kiện|số liệu)|Đọc nội dung sau|(Số liệu|Dữ liệu|Dữ kiện|Thông tin) (sau )?(dùng|sử dụng) cho)/u;
+// số câu của đoạn dẫn lấy từ các số đứng ngay sau chữ "câu", vì dòng mốc còn chứa ngày tháng và số liệu của đề
+const RE_CONTEXT_RANGE = /câu(?: hỏi| số)?(?:\s+từ)?\s*(\d+)(?:\s*(?:và|đến|,|-|–)\s*(?:câu(?: hỏi| số)?\s*)?(\d+))?/iu;
 const RE_END = /-{3,}\s*HẾT\s*-{3,}/u;
 const RE_FOOTER = /^\s*(Trang\s*\d+|GV\s*:)/u;
 // mốc "Câu N" luôn nằm sát lề trái, chữ "câu 3" giữa đoạn văn thì nằm xa hơn
@@ -34,7 +36,7 @@ export type PdfDocument = ReturnType<typeof openPdf>;
 
 function kindOf(text: string): QuestionKind | null {
   const t = text.toLowerCase();
-  if (t.includes("đúng sai") || t.includes("đúng hoặc sai")) return "tf";
+  if (t.includes("đúng sai") || t.includes("đúng hoặc sai") || t.includes("ý a), b), c), d)")) return "tf";
   if (t.includes("ghép")) return "match";
   if (t.includes("trả lời ngắn") || t.includes("ghi câu trả lời")) return "short";
   if (t.includes("nhiều phương án") || t.includes("a, b, c, d")) return "mcq";
@@ -192,8 +194,8 @@ export function analyzePdf(doc: PdfDocument): Analysis {
     }
     if (!boxes.length) continue;
     if (segment.type === "context") {
-      const numbers = [...segment.text.slice(0, 70).matchAll(/\d+/g)].map((match) => Number(match[0]));
-      const count = numbers.length >= 2 ? Math.max(...numbers) - Math.min(...numbers) + 1 : 2;
+      const range = RE_CONTEXT_RANGE.exec(segment.text);
+      const count = range?.[2] ? Number(range[2]) - Number(range[1]) + 1 : 2;
       items.push({ type: "context", count: Math.min(Math.max(count, 1), 10), boxes });
       continue;
     }
