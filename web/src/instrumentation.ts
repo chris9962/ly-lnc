@@ -6,7 +6,8 @@ export async function register() {
     // test E2E và thử tải đặt SEED_PAPERS=0 để bắt đầu với ngân hàng đề trống
     if (process.env.SEED_PAPERS !== "0") {
       const { seedPapers } = await import("./server/seed");
-      await seedPapers().catch((error) => console.error("Không nạp được bộ đề có sẵn", error));
+      // không chờ: cắt ảnh 32 đề mất khoảng một phút, máy chủ vẫn nhận yêu cầu trong lúc đó
+      void seedPapers().catch((error) => console.error("Không nạp được bộ đề có sẵn", error));
     }
   }
 }

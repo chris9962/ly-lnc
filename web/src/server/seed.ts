@@ -13,8 +13,9 @@ import { importSeedPaper } from "./papers";
 const SEED_DIR = path.join(process.cwd(), "seed", "papers");
 
 const manifestSchema = z.object({
-  folder: z.string().min(1),
-  papers: z.array(z.object({ file: z.string().regex(/^[a-z0-9-]+\.pdf$/), title: z.string().min(1), grade: z.number().refine(isGrade), layout: paperLayoutForm })),
+  papers: z.array(
+    z.object({ file: z.string().regex(/^[a-z0-9-]+\.pdf$/), title: z.string().min(1), grade: z.number().refine(isGrade), folder: z.string().min(1), layout: paperLayoutForm }),
+  ),
 });
 
 function seedFolder(name: string) {
@@ -36,8 +37,10 @@ export async function seedPapers() {
   const done = new Set(marks.map((mark) => (JSON.parse(mark.detail ?? "{}") as { file?: string }).file));
   const pending = manifest.papers.filter((paper) => !done.has(paper.file));
   if (!pending.length) return;
-  const folderId = seedFolder(manifest.folder);
+  const folderIds = new Map<string, number>();
   for (const paper of pending) {
+    const folderId = folderIds.get(paper.folder) ?? seedFolder(paper.folder);
+    folderIds.set(paper.folder, folderId);
     await importSeedPaper({ ...paper, folderId }, fs.readFileSync(path.join(SEED_DIR, paper.file)));
   }
 }

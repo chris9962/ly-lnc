@@ -40,7 +40,7 @@ Sau đó bấm đúp `start.bat`. File này tự làm các việc sau:
 4. Chạy `cloudflared tunnel run` nếu máy có `cloudflared` và có file `%USERPROFILE%\.cloudflared\config.yml`.
 5. Chạy web app tại http://localhost:3000.
 
-Lần khởi động đầu tiên, máy chủ nạp 12 đề VSAT kèm đáp án từ `web/seed/papers/` vào thư mục "Đề VSAT". Bước này mất khoảng 20 giây. Mỗi đề chỉ nạp một lần, đề đã xoá không tự quay lại. Đặt `SEED_PAPERS=0` nếu không muốn nạp.
+Lần khởi động đầu tiên, máy chủ nạp bộ đề có sẵn từ `web/seed/papers/`: 12 đề VSAT kèm đáp án vào thư mục "Đề VSAT" và 20 đề ôn thi TN THPT 2026 chưa có đáp án vào thư mục "Đề ôn thi TN THPT 2026". Máy chủ nạp trong nền khoảng một phút, trong lúc đó vẫn dùng được. Mỗi đề chỉ nạp một lần, đề đã xoá không tự quay lại. Đặt `SEED_PAPERS=0` nếu không muốn nạp.
 
 Đóng cửa sổ là dừng tất cả.
 
