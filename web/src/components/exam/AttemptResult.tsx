@@ -21,7 +21,7 @@ export function AttemptResult({ view, backHref, backLabel }: Props) {
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-6">
-      <nav aria-label="Vị trí" className="mb-3 text-sm">
+      <nav aria-label="Vị trí" className="mb-3 flex flex-wrap items-center text-sm">
         <Link href={backHref} className="inline-flex items-center gap-1.5 text-muted hover:text-brand">
           <ArrowLeft aria-hidden="true" className="size-4" />
           {backLabel}

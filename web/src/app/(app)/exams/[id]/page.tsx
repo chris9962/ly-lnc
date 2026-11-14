@@ -59,7 +59,7 @@ export default async function ExamPage({ params, searchParams }: Props) {
   return (
     <>
       {status === "running" && <AutoRefresh seconds={20} />}
-      <nav aria-label="Vị trí" className="mb-2 text-sm">
+      <nav aria-label="Vị trí" className="mb-2 flex flex-wrap items-center text-sm">
         <Link href="/exams" className="inline-flex items-center gap-1.5 text-muted hover:text-brand">
           <ArrowLeft aria-hidden="true" className="size-4" />
           Kỳ thi
