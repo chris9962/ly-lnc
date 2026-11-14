@@ -219,33 +219,37 @@ export function ExamRunner({ view }: { view: AttemptView }) {
 
       <div className="mx-auto grid max-w-6xl items-start gap-4 px-4 py-4 lg:grid-cols-[minmax(0,1fr)_18rem]">
         <article aria-labelledby="question-title" className="overflow-hidden rounded-xl border border-line bg-surface">
-          <div className="border-b border-l-8 border-line bg-surface-alt px-4 py-3" style={{ borderLeftColor: `var(--kind-${question.shape.kind})` }}>
-            <p className="text-lg font-bold uppercase tracking-wide" style={{ color: `var(--kind-${question.shape.kind})` }}>
-              {partTitle(part.number, question.shape.kind)}
-            </p>
-            <p className="text-sm text-muted">{HINTS[question.shape.kind]}</p>
-          </div>
-          <div className="p-4">
-            <div className="mb-3 flex flex-wrap items-center gap-3">
-              <h1 id="question-title" className="text-xl font-bold">
-                {questionName(question)}
-              </h1>
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-l-8 border-line bg-surface-alt px-4 py-3" style={{ borderLeftColor: `var(--kind-${question.shape.kind})` }}>
+            <div className="min-w-0 flex-1 basis-64">
+              <p className="text-lg font-bold uppercase tracking-wide" style={{ color: `var(--kind-${question.shape.kind})` }}>
+                {partTitle(part.number, question.shape.kind)}
+              </p>
+              <p className="text-sm text-muted">{HINTS[question.shape.kind]}</p>
+            </div>
+            <div className="flex items-center gap-3">
               <span className="text-sm text-muted">
                 {index + 1}/{questions.length}
               </span>
               <button
                 type="button"
+                aria-label="Đánh dấu xem lại"
+                title="Đánh dấu xem lại"
                 aria-pressed={flags.includes(question.seq)}
                 onClick={toggleFlag}
                 className={cx(
-                  "ml-auto inline-flex min-h-9 cursor-pointer items-center gap-1.5 rounded-lg border px-3 text-sm",
-                  flags.includes(question.seq) ? "border-warning bg-warning-soft font-semibold text-warning" : "border-line text-ink hover:bg-surface-alt",
+                  "inline-flex size-10 cursor-pointer items-center justify-center rounded-lg border",
+                  flags.includes(question.seq) ? "border-flag-line bg-flag-soft text-flag-ink" : "border-line bg-surface text-ink hover:bg-bg",
                 )}
               >
-                <Flag aria-hidden="true" className="size-4" fill={flags.includes(question.seq) ? "currentColor" : "none"} />
-                {flags.includes(question.seq) ? "Đã đánh dấu xem lại" : "Đánh dấu xem lại"}
+                <Flag aria-hidden="true" className="size-5" fill={flags.includes(question.seq) ? "currentColor" : "none"} />
               </button>
             </div>
+          </div>
+          <div className="p-4">
+            {/* ảnh câu hỏi đã có chữ "Câu N", tiêu đề chỉ còn cho trình đọc màn hình */}
+            <h1 id="question-title" className="sr-only">
+              {questionName(question)}
+            </h1>
             {contextImage && (
               <div className="mb-4 rounded-lg border-l-4 border-kind-context bg-surface-alt p-3">
                 <p className="mb-2 text-sm font-semibold text-kind-context">Thông tin dùng chung</p>
@@ -304,7 +308,7 @@ export function ExamRunner({ view }: { view: AttemptView }) {
                         )}
                       >
                         {item.label ?? item.seq}
-                        {flagged && <span aria-hidden="true" className="absolute -right-1 -top-1 size-3 rotate-45 border-2 border-surface bg-warning" />}
+                        {flagged && <span aria-hidden="true" className="absolute -right-1 -top-1 size-3 rounded-full border-2 border-surface bg-flag ring-1 ring-flag-line" />}
                       </button>
                     </li>
                   );
@@ -322,7 +326,7 @@ export function ExamRunner({ view }: { view: AttemptView }) {
               Làm dở
             </li>
             <li className="flex items-center gap-2">
-              <span aria-hidden="true" className="size-3 rotate-45 bg-warning" />
+              <span aria-hidden="true" className="size-3 rounded-full bg-flag ring-1 ring-flag-line" />
               Đánh dấu xem lại
             </li>
           </ul>

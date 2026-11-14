@@ -18,6 +18,11 @@
   --success-soft: #e4f4e8;
   --warning: #7a4f00;
   --warning-soft: #fff3d6;
+  /* màu đánh dấu xem lại: nền sáng dùng vàng tươi với chữ đậm, vì chữ vàng trên nền trắng không đủ tương phản */
+  --flag: #f59f00;
+  --flag-soft: #fdb515;
+  --flag-ink: #2e1f00;
+  --flag-line: #a36a00;
   --overlay: rgb(15 20 30 / 0.55);
   --kind-mcq: #1757c2;
   --kind-tf: #1a6b2d;
@@ -41,8 +46,39 @@
   }
 }
 
+/* hai khối dưới phải giống nhau: khối đầu cho lựa chọn "Tối", khối sau cho "Hệ thống" khi máy đang ở chế độ tối */
+:root[data-theme="dark"] {
+  --bg: #0f1318;
+  --surface: #181d24;
+  --surface-alt: #1f262f;
+  --series-thpt: #3987e5;
+  --series-vsat: #d95926;
+  --line: #36404d;
+  --ink: #e7ebf0;
+  --muted: #a7b1bd;
+  --brand: #6ea0f5;
+  --brand-strong: #8fb6f8;
+  --on-brand: #0b1220;
+  --danger: #ff8f85;
+  --danger-soft: #3a1b19;
+  --success: #7fd48e;
+  --success-soft: #15301b;
+  --warning: #f2c66d;
+  --warning-soft: #35290d;
+  --flag: #f2c66d;
+  --flag-soft: #35290d;
+  --flag-ink: #f2c66d;
+  --flag-line: #f2c66d;
+  --overlay: rgb(0 0 0 / 0.65);
+  --kind-mcq: #6ea0f5;
+  --kind-tf: #7fd48e;
+  --kind-match: #d39af0;
+  --kind-short: #ff8f85;
+  --kind-context: #f2c66d;
+}
+
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme="light"]) {
     --bg: #0f1318;
     --surface: #181d24;
     --surface-alt: #1f262f;
@@ -60,6 +96,10 @@
     --success-soft: #15301b;
     --warning: #f2c66d;
     --warning-soft: #35290d;
+    --flag: #f2c66d;
+    --flag-soft: #35290d;
+    --flag-ink: #f2c66d;
+    --flag-line: #f2c66d;
     --overlay: rgb(0 0 0 / 0.65);
     --kind-mcq: #6ea0f5;
     --kind-tf: #7fd48e;
@@ -85,6 +125,10 @@
   --color-success-soft: var(--success-soft);
   --color-warning: var(--warning);
   --color-warning-soft: var(--warning-soft);
+  --color-flag: var(--flag);
+  --color-flag-soft: var(--flag-soft);
+  --color-flag-ink: var(--flag-ink);
+  --color-flag-line: var(--flag-line);
   --color-overlay: var(--overlay);
   --color-kind-mcq: var(--kind-mcq);
   --color-kind-tf: var(--kind-tf);
@@ -97,6 +141,14 @@
 
 html {
   color-scheme: light dark;
+}
+
+html[data-theme="light"] {
+  color-scheme: light;
+}
+
+html[data-theme="dark"] {
+  color-scheme: dark;
 }
 
 body {

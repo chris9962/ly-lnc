@@ -1,14 +1,17 @@
+import { cookies } from "next/headers";
 import Link from "next/link";
 import { Logo } from "@/components/Logo";
 import { NavLinks } from "@/components/NavLinks";
 import { UserMenu } from "@/components/UserMenu";
 import { can, homePath, type SessionUser } from "@/lib/permissions";
 import { SITE_NAME } from "@/lib/site";
+import { parseTheme, THEME_COOKIE } from "@/lib/theme";
 import { cx } from "./ui/cx";
 
 const roleLabel = (user: SessionUser) => (user.role === "admin" ? "Quản trị viên" : user.role === "teacher" ? "Giáo viên" : `Học sinh khối ${user.grade}`);
 
-export function AppHeader({ user, wide }: { user: SessionUser; wide?: boolean }) {
+export async function AppHeader({ user, wide }: { user: SessionUser; wide?: boolean }) {
+  const theme = parseTheme((await cookies()).get(THEME_COOKIE)?.value);
   const links = [
     can(user, "exams.manage") && { href: "/exams", label: "Kỳ thi" },
     can(user, "papers.manage") && { href: "/papers", label: "Ngân hàng đề" },
@@ -25,7 +28,7 @@ export function AppHeader({ user, wide }: { user: SessionUser; wide?: boolean })
           {SITE_NAME}
         </Link>
         <NavLinks links={links} />
-        <UserMenu fullName={user.fullName} username={user.username} roleLabel={roleLabel(user)} />
+        <UserMenu fullName={user.fullName} username={user.username} roleLabel={roleLabel(user)} theme={theme} />
       </div>
     </header>
   );

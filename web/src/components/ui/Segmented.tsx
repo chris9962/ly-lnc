@@ -17,7 +17,7 @@ export function Segmented<T extends string>({ label, name, value, options, onCha
             key={option.value}
             htmlFor={`${id}-${option.value}`}
             className={cx(
-              "flex-1 cursor-pointer rounded-md px-4 py-1.5 text-center has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-brand",
+              "flex-1 cursor-pointer whitespace-nowrap rounded-md px-4 py-1.5 text-center has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-brand",
               value === option.value ? "bg-surface font-semibold text-ink shadow-sm" : "text-muted hover:text-ink",
             )}
           >

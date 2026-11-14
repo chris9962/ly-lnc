@@ -3,15 +3,18 @@
 import { ChevronDown } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
+import { THEME_OPTIONS, themeCookie, type Theme } from "@/lib/theme";
 import { LogoutButton } from "./LogoutButton";
+import { Segmented } from "./ui/Segmented";
 import { StatusTag } from "./ui/StatusTag";
 
-type Props = { fullName: string; username: string; roleLabel: string };
+type Props = { fullName: string; username: string; roleLabel: string; theme: Theme };
 
 const item = "flex min-h-10 w-full cursor-pointer items-center rounded-lg px-3 text-left text-ink no-underline hover:bg-surface-alt";
 
-export function UserMenu({ fullName, username, roleLabel }: Props) {
+export function UserMenu({ fullName, username, roleLabel, theme: initialTheme }: Props) {
   const [open, setOpen] = useState(false);
+  const [theme, setTheme] = useState(initialTheme);
   const rootRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const initial = fullName.trim().split(/\s+/).at(-1)?.[0]?.toUpperCase() ?? "?";
@@ -35,6 +38,13 @@ export function UserMenu({ fullName, username, roleLabel }: Props) {
     };
   }, [open]);
 
+  function changeTheme(next: Theme) {
+    setTheme(next);
+    document.cookie = themeCookie(next);
+    if (next === "system") delete document.documentElement.dataset.theme;
+    else document.documentElement.dataset.theme = next;
+  }
+
   return (
     <div ref={rootRef} className="relative">
       <button
@@ -52,11 +62,14 @@ export function UserMenu({ fullName, username, roleLabel }: Props) {
         <ChevronDown aria-hidden="true" strokeWidth={2.5} className={open ? "size-3.5 rotate-180" : "size-3.5"} />
       </button>
       {open && (
-        <div role="group" aria-label="Tài khoản" className="absolute right-0 top-full z-30 mt-2 w-64 rounded-xl border border-line bg-surface p-2 shadow-lg">
+        <div role="group" aria-label="Tài khoản" className="absolute right-0 top-full z-30 mt-2 w-72 rounded-xl border border-line bg-surface p-2 shadow-lg">
           <div className="border-b border-line px-3 pb-3 pt-2">
             <div className="font-semibold">{fullName}</div>
             <div className="mb-2 font-mono text-sm text-muted">{username}</div>
             <StatusTag>{roleLabel}</StatusTag>
+          </div>
+          <div className="border-b border-line px-3 pt-3">
+            <Segmented label="Giao diện" name="theme" value={theme} options={THEME_OPTIONS} onChange={changeTheme} />
           </div>
           <div className="pt-2">
             <Link href="/change-password" className={item} onClick={() => setOpen(false)}>
