@@ -12,7 +12,7 @@ import { attempts, examPapers, folders, paperContexts, paperQuestions, papers, u
 import { folderExists } from "./folders";
 import { rescorePaper } from "./grading";
 import { renderPageWebp, renderToStorage } from "./pdf/images";
-import { analyzePdf, openPdf, type Analysis, type PdfDocument } from "./pdf/layout";
+import { analyzePdf, openPdf, pageSizes, type Analysis, type PdfDocument } from "./pdf/layout";
 import { fail, FORBIDDEN, NOT_FOUND, ok, type Result } from "./result";
 import { deletePrefix, getObject, paperKeys, putObject } from "./storage";
 
@@ -208,6 +208,46 @@ export async function uploadPaper(user: SessionUser, meta: PaperMetaInput, bytes
     return fail("Không cắt được đề này", 500, "file");
   }
   return ok({ id: created.id, warnings });
+}
+
+export type SeedPaper = { file: string; title: string; grade: number; folderId: number | null; layout: PaperLayoutInput };
+
+// đề có sẵn trong repo: bố cục và đáp án đã kiểm tay nên không qua bước tự nhận diện
+export async function importSeedPaper(seed: SeedPaper, bytes: Uint8Array): Promise<number> {
+  const doc = openPdf(bytes);
+  const now = Date.now();
+  const { id } = getDb()
+    .insert(papers)
+    .values({
+      title: seed.title,
+      searchTitle: searchKey(seed.title),
+      grade: seed.grade,
+      folderId: seed.folderId,
+      format: seed.layout.format,
+      scoring: DEFAULT_RULES[seed.layout.format],
+      pageSizes: pageSizes(doc),
+      warnings: [],
+      sourceName: seed.file,
+      createdAt: now,
+      updatedAt: now,
+    })
+    .returning({ id: papers.id })
+    .get();
+  try {
+    await putObject(paperKeys.source(id), bytes);
+    const rendered = await renderAll(doc, id, 1, materialize(seed.layout.items));
+    getDb().transaction((tx) => {
+      const counts = writeLayout(tx, id, rendered);
+      tx.update(papers).set(counts).where(eq(papers.id, id)).run();
+      // dấu này ghi cùng lúc với bố cục: đề nạp dở thì lần khởi động sau nạp lại
+      writeAudit(tx, null, "paper.seed", { type: "paper", id }, { file: seed.file, title: seed.title });
+    });
+  } catch (error) {
+    getDb().delete(papers).where(eq(papers.id, id)).run();
+    deletePrefix(paperKeys.root(id));
+    throw error;
+  }
+  return id;
 }
 
 const paperRow = (id: number) => (Number.isInteger(id) ? getDb().select().from(papers).where(eq(papers.id, id)).get() : undefined);

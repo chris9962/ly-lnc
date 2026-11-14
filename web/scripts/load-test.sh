@@ -7,6 +7,7 @@ cd "$(dirname "$0")/.."
 export LOAD_PORT="${LOAD_PORT:-3212}"
 export LOAD_BASE="http://127.0.0.1:$LOAD_PORT"
 export DATA_DIR="$(mktemp -d)"
+export SEED_PAPERS=0
 
 bunx next start -p "$LOAD_PORT" -H 127.0.0.1 >"$DATA_DIR/server.log" 2>&1 &
 SERVER_PID=$!

@@ -40,6 +40,8 @@ Sau đó bấm đúp `start.bat`. File này tự làm các việc sau:
 4. Chạy `cloudflared tunnel run` nếu máy có `cloudflared` và có file `%USERPROFILE%\.cloudflared\config.yml`.
 5. Chạy web app tại http://localhost:3000.
 
+Lần khởi động đầu tiên, máy chủ nạp 12 đề VSAT kèm đáp án từ `web/seed/papers/` vào thư mục "Đề VSAT". Bước này mất khoảng 20 giây. Mỗi đề chỉ nạp một lần, đề đã xoá không tự quay lại. Đặt `SEED_PAPERS=0` nếu không muốn nạp.
+
 Đóng cửa sổ là dừng tất cả.
 
 `start.bat` chỉ build khi chưa có bản build. Sau khi kéo mã mới về phải tự build lại:

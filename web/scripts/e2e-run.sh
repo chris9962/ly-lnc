@@ -5,6 +5,7 @@ cd "$(dirname "$0")/.."
 
 export E2E_PORT="${E2E_PORT:-3210}"
 export DATA_DIR="$(mktemp -d)"
+export SEED_PAPERS=0
 export E2E_DATA_DIR="$DATA_DIR"
 
 bun run build

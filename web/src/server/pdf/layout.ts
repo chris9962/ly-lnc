@@ -16,10 +16,11 @@ export type Analysis = {
   tailText: string;
 };
 
-const RE_QUESTION = /^\s*Câu\s*(\d+)\s*[.:]/u;
+// sau số câu có thể có ghi chú nguồn trong ngoặc vuông, ví dụ "Câu 6 [VSAT đợt 6-2026]."
+const RE_QUESTION = /^\s*Câu\s*(\d+)\s*(?:\[[^\]]*\]\s*)?[.:]/u;
 const RE_PART = /^\s*PHẦN\s+([IVX]+)/u;
 const RE_RANGE = /^\s*Từ câu hỏi\s*(\d+)\s*đến\s*(\d+)/u;
-const RE_CONTEXT = /^\s*(Sử dụng các thông tin sau cho|Đọc nội dung sau)/u;
+const RE_CONTEXT = /^\s*((Sử dụng|Dùng)( các)? thông tin sau|Đọc nội dung sau)/u;
 const RE_END = /-{3,}\s*HẾT\s*-{3,}/u;
 const RE_FOOTER = /^\s*(Trang\s*\d+|GV\s*:)/u;
 // mốc "Câu N" luôn nằm sát lề trái, chữ "câu 3" giữa đoạn văn thì nằm xa hơn
