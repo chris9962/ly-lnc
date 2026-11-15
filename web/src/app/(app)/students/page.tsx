@@ -7,7 +7,7 @@ import { Pager } from "@/components/ui/Pager";
 import { GRADES } from "@/lib/grades";
 import { requirePage } from "@/lib/permissions";
 import { listUsersQuery } from "@/lib/userForm";
-import { countStudentsByGrade, listUsers } from "@/server/users";
+import { countStudentsByGrade, listUserIds, listUsers } from "@/server/users";
 
 export const metadata = { title: "Học sinh" };
 
@@ -18,7 +18,8 @@ export default async function StudentsPage({ searchParams }: { searchParams: Pro
   const query = listUsersQuery.parse({ ...(await searchParams), role: "student" });
   const list = listUsers(user, query);
   const counts = countStudentsByGrade(user);
-  if (!list.ok || !counts.ok) notFound();
+  const all = listUserIds(user, query);
+  if (!list.ok || !counts.ok || !all.ok) notFound();
 
   const total = GRADES.reduce((sum, grade) => sum + (counts.counts[grade] ?? 0), 0);
   const gradeParam = query.grade ? String(query.grade) : undefined;
@@ -46,7 +47,8 @@ export default async function StudentsPage({ searchParams }: { searchParams: Pro
           ]}
           values={{ grade: gradeParam ?? "" }}
         />
-        <AccountTable accounts={list.rows} showGrade emptyLabel="Chưa có học sinh" usernameLabel="Số điện thoại" profilePath="/students" />
+        {/* đổi bộ lọc thì bỏ lựa chọn cũ; chuyển trang thì giữ */}
+        <AccountTable key={`${gradeParam ?? ""}|${query.q}`} accounts={list.rows} showGrade emptyLabel="Chưa có học sinh" usernameLabel="Số điện thoại" profilePath="/students" selectableIds={all.ids} />
         <Pager path={PATH} params={{ grade: gradeParam, q: query.q || undefined }} page={list.page} pageCount={Math.ceil(list.total / list.pageSize)} />
       </Card>
     </>

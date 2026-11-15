@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { loginForm } from "@/lib/loginForm";
 import { passwordForm } from "@/lib/passwordForm";
-import { createUsersForm, listUsersQuery, updateUserForm } from "@/lib/userForm";
+import { bulkUsersForm, createUsersForm, listUsersQuery, MAX_BULK, updateUserForm } from "@/lib/userForm";
 
 const firstIssue = (result: { success: boolean; error?: { issues: { path: PropertyKey[]; message: string }[] } }) => result.error?.issues[0];
 
@@ -96,6 +96,32 @@ describe("updateUserForm", () => {
   it("từ chối khi không có trường nào hoặc khối sai", () => {
     expect(updateUserForm.safeParse({}).success).toBe(false);
     expect(updateUserForm.safeParse({ grade: "13" }).success).toBe(false);
+  });
+
+  it("gọn khoảng trắng trong họ tên và chuẩn hoá số điện thoại", () => {
+    expect(updateUserForm.parse({ fullName: "  Nguyễn   Văn  An ", phone: "+84 912 345 678" })).toEqual({ fullName: "Nguyễn Văn An", phone: "0912345678" });
+  });
+
+  it("báo lỗi đúng trường khi họ tên trống hoặc số điện thoại sai", () => {
+    expect(firstIssue(updateUserForm.safeParse({ fullName: "   " }))).toMatchObject({ path: ["fullName"], message: "Nhập họ tên" });
+    expect(firstIssue(updateUserForm.safeParse({ fullName: "a".repeat(81) }))?.path).toEqual(["fullName"]);
+    expect(firstIssue(updateUserForm.safeParse({ phone: "12345" }))).toMatchObject({ path: ["phone"], message: "Số điện thoại không hợp lệ" });
+  });
+});
+
+describe("bulkUsersForm", () => {
+  it("nhận chuyển khối và xoá, bỏ id lặp", () => {
+    expect(bulkUsersForm.parse({ action: "grade", grade: "11", ids: [3, 5, 3] })).toEqual({ action: "grade", grade: 11, ids: [3, 5] });
+    expect(bulkUsersForm.parse({ action: "delete", ids: [7] })).toEqual({ action: "delete", ids: [7] });
+  });
+
+  it("từ chối khi không chọn ai, chọn quá nhiều, thiếu khối hoặc id sai", () => {
+    expect(firstIssue(bulkUsersForm.safeParse({ action: "delete", ids: [] }))?.message).toBe("Chưa chọn tài khoản nào");
+    expect(bulkUsersForm.safeParse({ action: "delete", ids: Array.from({ length: MAX_BULK + 1 }, (_, i) => i + 1) }).success).toBe(false);
+    expect(firstIssue(bulkUsersForm.safeParse({ action: "grade", ids: [1] }))?.path).toEqual(["grade"]);
+    expect(bulkUsersForm.safeParse({ action: "grade", grade: "13", ids: [1] }).success).toBe(false);
+    expect(bulkUsersForm.safeParse({ action: "delete", ids: [1.5] }).success).toBe(false);
+    expect(bulkUsersForm.safeParse({ action: "lock", ids: [1] }).success).toBe(false);
   });
 });
 

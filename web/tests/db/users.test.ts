@@ -4,7 +4,7 @@ import { login } from "@/server/auth";
 import { getDb } from "@/server/db";
 import { users } from "@/server/db/schema";
 import { findSessionUser } from "@/server/session";
-import { createUsers, deleteUser, listUsers, resetPassword, updateUser } from "@/server/users";
+import { bulkUsers, createUsers, deleteUser, listUserIds, listUsers, resetPassword, updateUser } from "@/server/users";
 import { adminUser, auditActions, makeUser } from "./helpers";
 
 const rowOf = (id: number) => getDb().select().from(users).where(eq(users.id, id)).get();
@@ -166,6 +166,46 @@ describe("updateUser", () => {
     expect(updateUser(teacher.session, other.session.id, { disabled: true })).toMatchObject({ ok: false, status: 404 });
     expect(rowOf(other.session.id)?.disabled).toBe(false);
   });
+
+  it("sửa họ tên thì tìm được theo tên mới và ghi audit", async () => {
+    const student = await makeUser("student", "Trần Văn Sai");
+    expect(updateUser(adminUser(), student.session.id, { fullName: "Trần Văn Đúng" })).toEqual({ ok: true });
+    expect(rowOf(student.session.id)).toMatchObject({ fullName: "Trần Văn Đúng", searchName: "tran van dung", username: student.session.username });
+    expect(auditActions(student.session.id)).toContain("user.rename");
+  });
+
+  it("sửa số điện thoại thì đăng nhập bằng số mới, giữ mật khẩu và phiên đang có", async () => {
+    const student = await makeUser("student", "Học Sinh Đổi Số");
+    const session = await login({ username: student.session.username, password: student.password }, "1.1.1.4");
+    expect(updateUser(adminUser(), student.session.id, { phone: "0977000111" })).toEqual({ ok: true });
+    expect(rowOf(student.session.id)?.username).toBe("0977000111");
+    expect(auditActions(student.session.id)).toContain("user.change_phone");
+    expect(session.ok && findSessionUser(session.token)?.username).toBe("0977000111");
+    expect((await login({ username: "0977000111", password: student.password }, "1.1.1.4")).ok).toBe(true);
+    expect((await login({ username: student.session.username, password: student.password }, "1.1.1.4")).ok).toBe(false);
+  });
+
+  it("số điện thoại đã có tài khoản khác thì từ chối và không sửa gì", async () => {
+    const first = await makeUser("student", "Học Sinh Giữ Số");
+    const second = await makeUser("student", "Học Sinh Muốn Đổi");
+    const result = updateUser(adminUser(), second.session.id, { fullName: "Tên Mới", phone: first.session.username });
+    expect(result).toMatchObject({ ok: false, status: 400, field: "phone", message: "Số điện thoại đã có tài khoản" });
+    expect(rowOf(second.session.id)).toMatchObject({ fullName: "Học Sinh Muốn Đổi", username: second.session.username });
+  });
+
+  it("gửi lại đúng họ tên và số điện thoại cũ thì không ghi audit", async () => {
+    const student = await makeUser("student", "Học Sinh Không Đổi");
+    const before = auditActions(student.session.id).length;
+    expect(updateUser(adminUser(), student.session.id, { fullName: "Học Sinh Không Đổi", phone: student.session.username })).toEqual({ ok: true });
+    expect(auditActions(student.session.id).length).toBe(before);
+  });
+
+  it("không đổi số điện thoại cho giáo viên, vẫn sửa được họ tên", async () => {
+    const teacher = await makeUser("teacher", "Giáo Viên Mười");
+    expect(updateUser(adminUser(), teacher.session.id, { phone: "0977000222" })).toMatchObject({ ok: false, status: 400, field: "phone" });
+    expect(updateUser(adminUser(), teacher.session.id, { fullName: "Giáo Viên Mười Một" })).toEqual({ ok: true });
+    expect(rowOf(teacher.session.id)).toMatchObject({ fullName: "Giáo Viên Mười Một", username: teacher.session.username });
+  });
 });
 
 describe("deleteUser", () => {
@@ -180,5 +220,68 @@ describe("deleteUser", () => {
     const admin = adminUser();
     expect(deleteUser(admin, admin.id)).toMatchObject({ ok: false, status: 404 });
     expect(rowOf(admin.id)).toBeDefined();
+  });
+});
+
+describe("listUserIds", () => {
+  it("trả id của mọi tài khoản khớp bộ lọc, không chia trang", async () => {
+    const people = Array.from({ length: 17 }, (_, i) => ({ fullName: `Vũ Chọn Hết ${String.fromCharCode(65 + i)}`, phone: `09550000${String(i).padStart(2, "0")}` }));
+    await createUsers(adminUser(), { role: "student", grade: 10, people });
+    const all = listUserIds(adminUser(), { role: "student", grade: 10, q: "vu chon het", page: 1 });
+    expect(all.ok && all.ids.length).toBe(17);
+    const page = listUsers(adminUser(), { role: "student", grade: 10, q: "vu chon het", page: 1 });
+    expect(all.ok && page.ok && all.ids.slice(0, 15)).toEqual(page.ok && page.rows.map((row) => row.id));
+    expect(listUserIds(adminUser(), { role: "student", grade: 11, q: "vu chon het", page: 1 })).toMatchObject({ ok: true, ids: [] });
+  });
+
+  it("giáo viên không lấy được id của giáo viên", async () => {
+    const teacher = await makeUser("teacher", "Giáo Viên Lấy Id");
+    expect(listUserIds(teacher.session, { role: "teacher", grade: undefined, q: "", page: 1 })).toMatchObject({ ok: false, status: 403 });
+  });
+});
+
+describe("bulkUsers", () => {
+  it("chuyển khối nhiều học sinh một lần, mỗi học sinh một dòng audit, học sinh đã ở khối đó thì bỏ qua", async () => {
+    const a = await makeUser("student", "Chuyển Khối Một", 10);
+    const b = await makeUser("student", "Chuyển Khối Hai", 10);
+    const c = await makeUser("student", "Chuyển Khối Ba", 11);
+    const result = bulkUsers(adminUser(), { action: "grade", grade: 11, ids: [a.session.id, b.session.id, c.session.id] });
+    expect(result).toEqual({ ok: true, count: 2 });
+    expect([a, b, c].map((item) => rowOf(item.session.id)?.grade)).toEqual([11, 11, 11]);
+    expect(auditActions(a.session.id)).toContain("user.change_grade");
+    expect(auditActions(c.session.id)).not.toContain("user.change_grade");
+  });
+
+  it("xoá nhiều học sinh một lần và ghi audit", async () => {
+    const a = await makeUser("student", "Xoá Nhiều Một");
+    const b = await makeUser("student", "Xoá Nhiều Hai");
+    expect(bulkUsers(adminUser(), { action: "delete", ids: [a.session.id, b.session.id] })).toEqual({ ok: true, count: 2 });
+    expect(rowOf(a.session.id)).toBeUndefined();
+    expect(rowOf(b.session.id)).toBeUndefined();
+    expect(auditActions(a.session.id)).toContain("user.delete");
+  });
+
+  it("bỏ qua id không tồn tại và tài khoản ngoài phạm vi", async () => {
+    const teacher = await makeUser("teacher", "Giáo Viên Làm Nhiều");
+    const other = await makeUser("teacher", "Giáo Viên Bị Chọn");
+    const student = await makeUser("student", "Học Sinh Bị Chọn");
+    const result = bulkUsers(teacher.session, { action: "delete", ids: [other.session.id, adminUser().id, 999999, student.session.id] });
+    expect(result).toEqual({ ok: true, count: 1 });
+    expect(rowOf(other.session.id)).toBeDefined();
+    expect(rowOf(adminUser().id)).toBeDefined();
+    expect(rowOf(student.session.id)).toBeUndefined();
+  });
+
+  it("chuyển khối không áp cho giáo viên", async () => {
+    const teacher = await makeUser("teacher", "Giáo Viên Không Khối");
+    expect(bulkUsers(adminUser(), { action: "grade", grade: 12, ids: [teacher.session.id] })).toEqual({ ok: true, count: 0 });
+    expect(rowOf(teacher.session.id)?.grade).toBeNull();
+  });
+
+  it("học sinh không làm được thao tác nhiều tài khoản", async () => {
+    const student = await makeUser("student", "Học Sinh Tự Xoá");
+    const victim = await makeUser("student", "Học Sinh Nạn Nhân");
+    expect(bulkUsers(student.session, { action: "delete", ids: [victim.session.id] })).toMatchObject({ ok: false, status: 403 });
+    expect(rowOf(victim.session.id)).toBeDefined();
   });
 });

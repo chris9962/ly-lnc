@@ -1,7 +1,7 @@
 import "server-only";
 import { and, asc, count, eq, inArray, like, or, type SQL } from "drizzle-orm";
 import { can, manageAction, manageableRoles, type ManagedRole, type SessionUser } from "@/lib/permissions";
-import { PAGE_SIZE, type CreateUsersInput, type ListUsersQuery, type UpdateUserInput } from "@/lib/userForm";
+import { PAGE_SIZE, type BulkUsersInput, type CreateUsersInput, type ListUsersQuery, type UpdateUserInput } from "@/lib/userForm";
 import { baseUsername, searchKey } from "@/lib/username";
 import { writeAudit } from "./audit";
 import { getDb, type Tx } from "./db";
@@ -36,10 +36,7 @@ const listColumns = {
 
 const escapeLike = (text: string) => text.replace(/[\\%_]/g, (char) => `\\${char}`);
 
-export function listUsers(user: SessionUser, query: ListUsersQuery): Result<{ rows: UserListItem[]; total: number; page: number; pageSize: number }> {
-  if (!can(user, manageAction(query.role))) return FORBIDDEN;
-  const db = getDb();
-
+function listWhere(query: ListUsersQuery) {
   const filters: (SQL | undefined)[] = [eq(users.role, query.role)];
   if (query.grade !== undefined) filters.push(eq(users.grade, query.grade));
   const key = searchKey(query.q);
@@ -47,7 +44,13 @@ export function listUsers(user: SessionUser, query: ListUsersQuery): Result<{ ro
     const pattern = `%${escapeLike(key)}%`;
     filters.push(or(like(users.searchName, pattern), like(users.username, pattern)));
   }
-  const where = and(...filters);
+  return and(...filters);
+}
+
+export function listUsers(user: SessionUser, query: ListUsersQuery): Result<{ rows: UserListItem[]; total: number; page: number; pageSize: number }> {
+  if (!can(user, manageAction(query.role))) return FORBIDDEN;
+  const db = getDb();
+  const where = listWhere(query);
 
   const total = db.select({ n: count() }).from(users).where(where).get()?.n ?? 0;
   const lastPage = Math.max(1, Math.ceil(total / PAGE_SIZE));
@@ -61,6 +64,13 @@ export function listUsers(user: SessionUser, query: ListUsersQuery): Result<{ ro
     .offset((page - 1) * PAGE_SIZE)
     .all();
   return ok({ rows, total, page, pageSize: PAGE_SIZE });
+}
+
+// id của mọi dòng khớp bộ lọc, cùng thứ tự với listUsers, để nút chọn tất cả chọn được cả các trang chưa mở
+export function listUserIds(user: SessionUser, query: ListUsersQuery): Result<{ ids: number[] }> {
+  if (!can(user, manageAction(query.role))) return FORBIDDEN;
+  const rows = getDb().select({ id: users.id }).from(users).where(listWhere(query)).orderBy(asc(users.searchName), asc(users.id)).all();
+  return ok({ ids: rows.map((row) => row.id) });
 }
 
 function freeUsername(tx: Tx, base: string): string {
@@ -131,8 +141,20 @@ export function updateUser(user: SessionUser, id: number, input: UpdateUserInput
   const target = findManaged(user, id);
   if (!target) return NOT_FOUND;
   if (input.grade !== undefined && target.role !== "student") return fail("Chỉ học sinh mới có khối", 400, "grade");
+  if (input.phone !== undefined && target.role !== "student") return fail("Chỉ học sinh đăng nhập bằng số điện thoại", 400, "phone");
+  const { fullName, phone } = input;
 
-  getDb().transaction((tx) => {
+  return getDb().transaction((tx): Result => {
+    if (phone !== undefined && phone !== target.username) {
+      if (tx.select({ id: users.id }).from(users).where(eq(users.username, phone)).get()) return fail("Số điện thoại đã có tài khoản", 400, "phone");
+      // phiên gắn với id tài khoản nên học sinh đang đăng nhập không bị đăng xuất
+      tx.update(users).set({ username: phone }).where(eq(users.id, id)).run();
+      writeAudit(tx, user, "user.change_phone", { type: "user", id }, { from: target.username, to: phone });
+    }
+    if (fullName !== undefined && fullName !== target.fullName) {
+      tx.update(users).set({ fullName, searchName: searchKey(fullName) }).where(eq(users.id, id)).run();
+      writeAudit(tx, user, "user.rename", { type: "user", id }, { username: phone ?? target.username, from: target.fullName, to: fullName });
+    }
     if (input.disabled !== undefined && input.disabled !== target.disabled) {
       tx.update(users).set({ disabled: input.disabled }).where(eq(users.id, id)).run();
       if (input.disabled) deleteSessionsOf(tx, id);
@@ -142,8 +164,8 @@ export function updateUser(user: SessionUser, id: number, input: UpdateUserInput
       tx.update(users).set({ grade: input.grade }).where(eq(users.id, id)).run();
       writeAudit(tx, user, "user.change_grade", { type: "user", id }, { username: target.username, from: target.grade, to: input.grade });
     }
+    return ok();
   });
-  return ok();
 }
 
 export function deleteUser(user: SessionUser, id: number): Result {
@@ -155,6 +177,34 @@ export function deleteUser(user: SessionUser, id: number): Result {
     tx.delete(users).where(eq(users.id, id)).run();
   });
   return ok();
+}
+
+// id không tồn tại và tài khoản ngoài phạm vi bị bỏ qua, vì danh sách trên màn hình có thể đã cũ
+export function bulkUsers(user: SessionUser, input: BulkUsersInput): Result<{ count: number }> {
+  const roles = manageableRoles(user);
+  if (!roles.length) return FORBIDDEN;
+
+  return getDb().transaction((tx): Result<{ count: number }> => {
+    const targets = tx
+      .select()
+      .from(users)
+      .where(inArray(users.id, input.ids))
+      .all()
+      .filter((target) => roles.includes(target.role as ManagedRole));
+    let count = 0;
+    for (const target of targets) {
+      if (input.action === "grade") {
+        if (target.role !== "student" || target.grade === input.grade) continue;
+        tx.update(users).set({ grade: input.grade }).where(eq(users.id, target.id)).run();
+        writeAudit(tx, user, "user.change_grade", { type: "user", id: target.id }, { username: target.username, from: target.grade, to: input.grade, bulk: true });
+      } else {
+        writeAudit(tx, user, "user.delete", { type: "user", id: target.id }, { username: target.username, fullName: target.fullName, role: target.role, bulk: true });
+        tx.delete(users).where(eq(users.id, target.id)).run();
+      }
+      count++;
+    }
+    return ok({ count });
+  });
 }
 
 export function countStudentsByGrade(user: SessionUser): Result<{ counts: Record<number, number> }> {

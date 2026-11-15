@@ -3,6 +3,7 @@ import { isGrade, type Grade } from "./grades";
 import { normalizePhone } from "./phone";
 
 export const MAX_BATCH = 200;
+export const MAX_BULK = 1000;
 export const MAX_NAME_LENGTH = 80;
 export const PAGE_SIZE = 15;
 
@@ -62,10 +63,41 @@ export const updateUserForm = z
   .object({
     disabled: z.boolean().optional(),
     grade: z.coerce.number().refine(isGrade, "Khối không hợp lệ").optional(),
+    fullName: z
+      .string()
+      .transform(tidy)
+      .pipe(z.string().min(1, "Nhập họ tên").max(MAX_NAME_LENGTH, `Họ tên tối đa ${MAX_NAME_LENGTH} ký tự`))
+      .optional(),
+    phone: z
+      .string()
+      .transform((raw, ctx) => {
+        const phone = normalizePhone(raw);
+        if (phone) return phone;
+        ctx.addIssue({ code: "custom", message: "Số điện thoại không hợp lệ" });
+        return z.NEVER;
+      })
+      .optional(),
   })
-  .refine((value) => value.disabled !== undefined || value.grade !== undefined, "Không có thay đổi");
+  .refine((value) => Object.values(value).some((field) => field !== undefined), "Không có thay đổi");
 
-export type UpdateUserInput = { disabled?: boolean; grade?: number };
+export type UpdateUserInput = { disabled?: boolean; grade?: number; fullName?: string; phone?: string };
+
+export const bulkUsersForm = z
+  .object({
+    action: z.enum(["grade", "delete"]),
+    grade: z.coerce.number().refine(isGrade, "Khối không hợp lệ").optional(),
+    ids: z
+      .array(z.number().int().positive())
+      .min(1, "Chưa chọn tài khoản nào")
+      .max(MAX_BULK, `Mỗi lần tối đa ${MAX_BULK} tài khoản`)
+      .transform((ids) => [...new Set(ids)]),
+  })
+  .superRefine((value, ctx) => {
+    if (value.action === "grade" && value.grade === undefined) ctx.addIssue({ code: "custom", path: ["grade"], message: "Chọn khối" });
+  })
+  .transform((value) => (value.action === "grade" ? { action: "grade" as const, grade: value.grade as Grade, ids: value.ids } : { action: "delete" as const, ids: value.ids }));
+
+export type BulkUsersInput = z.infer<typeof bulkUsersForm>;
 
 export const listUsersQuery = z.object({
   role: z.enum(["teacher", "student"]),

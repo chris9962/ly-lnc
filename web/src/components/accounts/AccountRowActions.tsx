@@ -8,9 +8,10 @@ import { Dialog } from "@/components/ui/Dialog";
 import { Select } from "@/components/ui/Select";
 import { callApi } from "@/lib/api";
 import { GRADES } from "@/lib/grades";
+import { EditAccountButton } from "./EditAccountButton";
 import { IssuedAccounts, type IssuedAccount } from "./IssuedAccounts";
 
-type Account = { id: number; username: string; fullName: string; grade: number | null; disabled: boolean };
+type Account = { id: number; username: string; fullName: string; role: "admin" | "teacher" | "student"; grade: number | null; disabled: boolean };
 
 export function GradeSelect({ account }: { account: Account }) {
   const router = useRouter();
@@ -67,6 +68,7 @@ export function AccountRowActions({ account }: { account: Account }) {
 
   return (
     <div className="flex flex-wrap gap-1.5">
+      <EditAccountButton account={account} size="sm" />
       <Button size="sm" onClick={() => setConfirm("reset")}>
         Đặt lại mật khẩu
       </Button>
