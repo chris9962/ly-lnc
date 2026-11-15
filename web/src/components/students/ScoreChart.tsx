@@ -4,10 +4,12 @@ import { useEffect, useRef, useState, type PointerEvent } from "react";
 import { formatDateTime } from "@/lib/format";
 import { FORMAT_NAMES, type PaperFormat } from "@/lib/paperLayout";
 import { formatScore } from "@/lib/scoring";
+import { monthStarts } from "@/lib/yearActivity";
 
 export type ScorePoint = { id: number; at: number; title: string; format: PaperFormat; score: number; maxScore: number; value: number };
 
-type Props = { year: number; from: number; to: number; points: ScorePoint[] };
+// scope là tên tập bài đang xem, ví dụ "khối 12"; span là khoảng trục thời gian, trống khi chưa có bài
+type Props = { scope: string; span: { from: number; to: number } | null; points: ScorePoint[] };
 
 const FORMATS: PaperFormat[] = ["thpt", "vsat"];
 const COLOR: Record<PaperFormat, string> = { thpt: "var(--series-thpt)", vsat: "var(--series-vsat)" };
@@ -16,7 +18,7 @@ const PAD = { left: 30, right: 18, top: 18, bottom: 26 };
 const Y_TICKS = [0, 2, 4, 6, 8, 10];
 
 // hai loại đề khác thang điểm nên vẽ chung một trục theo điểm quy về 10, điểm gốc nằm trong chú thích
-export function ScoreChart({ year, from, to, points }: Props) {
+export function ScoreChart({ scope, span, points }: Props) {
   const box = useRef<HTMLDivElement>(null);
   const [width, setWidth] = useState(720);
   const [active, setActive] = useState<number | null>(null);
@@ -36,8 +38,11 @@ export function ScoreChart({ year, from, to, points }: Props) {
   const y = (value: number) => PAD.top + (1 - value / 10) * innerH;
   const sorted = [...points].sort((a, b) => a.at - b.at);
   const series = FORMATS.map((format) => ({ format, points: sorted.filter((point) => point.format === format) })).filter((item) => item.points.length);
-  const monthStep = width < 480 ? 3 : width < 640 ? 2 : 1;
-  const months = Array.from({ length: 12 }, (_, month) => ({ month, at: Date.UTC(year, month, 1) - 7 * 3_600_000 })).filter((item) => item.month % monthStep === 0);
+  const { from, to } = span ?? { from: 0, to: 1 };
+  // số nhãn tháng giới hạn theo bề ngang để các nhãn không đè lên nhau
+  const allMonths = monthStarts(from, to);
+  const monthStep = Math.max(1, Math.ceil(allMonths.length / (width < 480 ? 4 : width < 640 ? 6 : 12)));
+  const months = allMonths.filter((_, index) => index % monthStep === 0);
 
   function track(event: PointerEvent<SVGSVGElement>) {
     if (!sorted.length) return;
@@ -50,7 +55,7 @@ export function ScoreChart({ year, from, to, points }: Props) {
   // hộp chú thích nằm bên cạnh đường gióng, phía còn nhiều chỗ, để không che điểm đang xem
   const tipOnLeft = current ? x(current.at) > width / 2 : false;
 
-  if (!sorted.length) return <p className="py-8 text-center text-muted">Chưa có bài đã nộp trong năm {year}</p>;
+  if (!sorted.length || !span) return <p className="py-8 text-center text-muted">Chưa có bài đã nộp ở {scope}</p>;
 
   return (
     <div>
@@ -67,7 +72,7 @@ export function ScoreChart({ year, from, to, points }: Props) {
           width={width}
           height={HEIGHT}
           role="group"
-          aria-label={`Điểm các bài đã nộp năm ${year}, quy về thang 10`}
+          aria-label={`Điểm các bài đã nộp ở ${scope}, quy về thang 10`}
           onPointerMove={track}
           onPointerLeave={() => setActive(null)}
           className="block touch-pan-y select-none"
@@ -80,9 +85,10 @@ export function ScoreChart({ year, from, to, points }: Props) {
               </text>
             </g>
           ))}
-          {months.map((item) => (
-            <text key={item.month} x={x(item.at)} y={HEIGHT - 8} fontSize={11} fill="var(--muted)">
-              Th{item.month + 1}
+          {months.map((item, index) => (
+            <text key={item.at} x={x(item.at)} y={HEIGHT - 8} fontSize={11} fill="var(--muted)">
+              Th{item.month}
+              {(index === 0 || item.month === 1) && `/${String(item.year).slice(2)}`}
             </text>
           ))}
           {current && <line x1={x(current.at)} x2={x(current.at)} y1={PAD.top} y2={PAD.top + innerH} stroke="var(--muted)" strokeWidth={1} />}

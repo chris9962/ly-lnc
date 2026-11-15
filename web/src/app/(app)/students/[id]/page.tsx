@@ -1,6 +1,7 @@
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { EditAccountButton } from "@/components/accounts/EditAccountButton";
 import { ScoreChart, type ScorePoint } from "@/components/students/ScoreChart";
 import { buttonClass } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
@@ -10,12 +11,13 @@ import { formatDate, formatDateTime, formatTime } from "@/lib/format";
 import { requirePage } from "@/lib/permissions";
 import { FORMAT_NAMES } from "@/lib/paperLayout";
 import { formatScore } from "@/lib/scoring";
-import { onTen, yearBounds } from "@/lib/yearActivity";
+import { isGrade } from "@/lib/grades";
+import { monthSpan, onTen } from "@/lib/yearActivity";
 import { getStudentProfile, type StudentEntry } from "@/server/students";
 
 type Props = { params: Promise<{ id: string }>; searchParams: Promise<Record<string, string | string[] | undefined>> };
 
-const yearOf = (value: string | string[] | undefined) => (typeof value === "string" && /^\d{4}$/.test(value) ? Number(value) : undefined);
+const gradeOf = (value: string | string[] | undefined) => (typeof value === "string" && isGrade(Number(value)) ? Number(value) : undefined);
 
 const STATUS: Record<StudentEntry["status"], { label: string; tone: "success" | "warning" | "neutral"; dot: string }> = {
   submitted: { label: "Đã nộp", tone: "success", dot: "border-brand bg-brand" },
@@ -32,17 +34,18 @@ export async function generateMetadata({ params }: Props) {
 export default async function StudentPage({ params, searchParams }: Props) {
   const user = await requirePage("students.manage");
   const id = Number((await params).id);
-  const profile = getStudentProfile(user, id, yearOf((await searchParams).year));
+  const profile = getStudentProfile(user, id, gradeOf((await searchParams).grade));
   if (!profile.ok) notFound();
-  const { student, year, years, entries, stats } = profile;
+  const { student, grade, grades, entries, stats } = profile;
+  const isCurrentGrade = grade === student.grade;
 
-  const months = new Map<number, StudentEntry[]>();
+  // một khối kéo dài qua hai năm dương lịch nên nhóm theo cả năm và tháng
+  const months = new Map<string, StudentEntry[]>();
   for (const entry of entries) {
-    const month = Number(entry.day.slice(5, 7));
+    const month = entry.day.slice(0, 7);
     months.set(month, [...(months.get(month) ?? []), entry]);
   }
   const points = (value: number | null) => (value === null ? "Chưa có" : formatScore(value));
-  const bounds = yearBounds(year);
   const chartPoints: ScorePoint[] = entries.flatMap((entry) =>
     entry.status === "submitted" && entry.attemptId && entry.format && entry.score !== null && entry.maxScore
       ? [{ id: entry.attemptId, at: entry.at, title: entry.examTitle, format: entry.format, score: entry.score, maxScore: entry.maxScore, value: onTen(entry.score, entry.maxScore) }]
@@ -57,28 +60,33 @@ export default async function StudentPage({ params, searchParams }: Props) {
           Học sinh
         </Link>
       </nav>
-      <div className="mb-4">
-        <h1 className="mb-2 text-2xl font-bold">{student.fullName}</h1>
-        <div className="flex flex-wrap items-center gap-2">
-          {student.grade !== null && <StatusTag>Khối {student.grade}</StatusTag>}
-          {student.disabled ? <StatusTag tone="danger">Đã khoá</StatusTag> : student.mustChangePassword ? <StatusTag tone="warning">Mật khẩu tạm</StatusTag> : <StatusTag tone="success">Đang dùng</StatusTag>}
-          <span className="font-mono text-sm text-muted">{student.username}</span>
-          <span className="text-sm text-muted">Tạo ngày {formatDate(student.createdAt)}</span>
+      <div className="mb-4 flex flex-wrap items-start justify-between gap-4">
+        <div className="min-w-0">
+          <h1 className="mb-2 text-2xl font-bold">{student.fullName}</h1>
+          <div className="flex flex-wrap items-center gap-2">
+            {student.grade !== null && <StatusTag>Khối {student.grade}</StatusTag>}
+            {student.disabled ? <StatusTag tone="danger">Đã khoá</StatusTag> : student.mustChangePassword ? <StatusTag tone="warning">Mật khẩu tạm</StatusTag> : <StatusTag tone="success">Đang dùng</StatusTag>}
+            <span className="font-mono text-sm text-muted">{student.username}</span>
+            <span className="text-sm text-muted">Tạo ngày {formatDate(student.createdAt)}</span>
+          </div>
         </div>
+        <EditAccountButton account={{ id: student.id, username: student.username, fullName: student.fullName, role: "student" }} />
       </div>
 
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <h2 className="text-lg font-bold">Năm {year}</h2>
-        <nav aria-label="Chọn năm" className="flex flex-wrap gap-1.5">
-          {years.map((option) => (
-            <Link key={option} href={`/students/${id}?year=${option}`} aria-current={option === year ? "page" : undefined} className={buttonClass(option === year ? "primary" : "secondary", "sm")}>
-              {option}
-            </Link>
-          ))}
-        </nav>
+        <h2 className="text-lg font-bold">Kết quả khối {grade}</h2>
+        {grades.length > 1 && (
+          <nav aria-label="Chọn khối" className="flex flex-wrap gap-1.5">
+            {grades.map((option) => (
+              <Link key={option} href={`/students/${id}?grade=${option}`} aria-current={option === grade ? "page" : undefined} className={buttonClass(option === grade ? "primary" : "secondary", "sm")}>
+                Khối {option}
+              </Link>
+            ))}
+          </nav>
+        )}
       </div>
 
-      <div className="mb-4 grid gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_12rem]">
+      <div className={cx("mb-4 grid gap-3", isCurrentGrade ? "lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_12rem]" : "lg:grid-cols-2")}>
         {(["thpt", "vsat"] as const).map((format) => {
           const group = stats[format];
           return (
@@ -103,26 +111,29 @@ export default async function StudentPage({ params, searchParams }: Props) {
             </Card>
           );
         })}
-        <Card className="p-4">
-          <h3 className="mb-3 font-bold">Chuyên cần</h3>
-          <dl className="grid grid-cols-2 gap-3 lg:grid-cols-1">
-            <div>
-              <dt className="text-sm text-muted">Không vào thi</dt>
-              <dd className="text-xl font-bold">{stats.absent}</dd>
-            </div>
-            {stats.working > 0 && (
+        {/* khối cũ không đếm được kỳ thi bỏ lỡ nên không hiện ô này */}
+        {isCurrentGrade && (
+          <Card className="p-4">
+            <h3 className="mb-3 font-bold">Chuyên cần</h3>
+            <dl className="grid grid-cols-2 gap-3 lg:grid-cols-1">
               <div>
-                <dt className="text-sm text-muted">Đang làm</dt>
-                <dd className="text-xl font-bold">{stats.working}</dd>
+                <dt className="text-sm text-muted">Không vào thi</dt>
+                <dd className="text-xl font-bold">{stats.absent}</dd>
               </div>
-            )}
-          </dl>
-        </Card>
+              {stats.working > 0 && (
+                <div>
+                  <dt className="text-sm text-muted">Đang làm</dt>
+                  <dd className="text-xl font-bold">{stats.working}</dd>
+                </div>
+              )}
+            </dl>
+          </Card>
+        )}
       </div>
 
       <Card className="mb-4">
         <h3 className="mb-3 font-bold">Điểm các bài đã nộp</h3>
-        <ScoreChart year={year} from={bounds.from} to={bounds.to} points={chartPoints} />
+        <ScoreChart scope={`khối ${grade}`} span={monthSpan(chartPoints.map((point) => point.at))} points={chartPoints} />
       </Card>
 
       <Card>
@@ -130,8 +141,10 @@ export default async function StudentPage({ params, searchParams }: Props) {
         {entries.length ? (
           <div className="space-y-6">
             {[...months].map(([month, list]) => (
-              <section key={month} aria-label={`Tháng ${month} năm ${year}`} className="grid gap-x-4 gap-y-2 sm:grid-cols-[5.5rem_minmax(0,1fr)]">
-                <h4 className="text-sm font-semibold text-muted sm:pt-0.5">Tháng {month}</h4>
+              <section key={month} aria-label={`Tháng ${Number(month.slice(5))} năm ${month.slice(0, 4)}`} className="grid gap-x-4 gap-y-2 sm:grid-cols-[6.5rem_minmax(0,1fr)]">
+                <h4 className="text-sm font-semibold text-muted sm:pt-0.5">
+                  Tháng {Number(month.slice(5))}/{month.slice(0, 4)}
+                </h4>
                 <ol className="border-l-2 border-line">
                   {list.map((entry) => {
                     const state = STATUS[entry.status];
@@ -167,7 +180,7 @@ export default async function StudentPage({ params, searchParams }: Props) {
             ))}
           </div>
         ) : (
-          <p className="py-8 text-center text-muted">Chưa có kỳ thi nào trong năm {year}</p>
+          <p className="py-8 text-center text-muted">Chưa có kỳ thi nào ở khối {grade}</p>
         )}
       </Card>
     </>

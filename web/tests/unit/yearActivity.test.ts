@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatStats, onTen, vnIsoDate, vnYear, yearBounds } from "@/lib/yearActivity";
+import { formatStats, monthSpan, monthStarts, onTen, vnIsoDate, vnYear, yearBounds } from "@/lib/yearActivity";
 
 const vn = (y: number, m: number, d: number, h = 0, min = 0) => Date.UTC(y, m - 1, d, h - 7, min);
 
@@ -9,6 +9,22 @@ describe("năm theo giờ Việt Nam", () => {
     expect(vnYear(vn(2025, 12, 31, 23, 30))).toBe(2025);
     expect(vnIsoDate(vn(2026, 11, 5, 23, 59))).toBe("2026-11-05");
     expect(yearBounds(2026)).toEqual({ from: vn(2026, 1, 1), to: vn(2027, 1, 1) });
+  });
+});
+
+describe("khoảng tháng theo giờ Việt Nam", () => {
+  it("monthSpan chạy từ đầu tháng của mốc sớm nhất tới đầu tháng sau mốc muộn nhất, qua được năm", () => {
+    expect(monthSpan([vn(2027, 1, 3, 9), vn(2026, 11, 15, 10)])).toEqual({ from: vn(2026, 11, 1), to: vn(2027, 2, 1) });
+    expect(monthSpan([vn(2026, 12, 31, 23, 30)])).toEqual({ from: vn(2026, 12, 1), to: vn(2027, 1, 1) });
+    expect(monthSpan([])).toBeNull();
+  });
+
+  it("monthStarts liệt kê đầu từng tháng trong khoảng", () => {
+    expect(monthStarts(vn(2026, 11, 1), vn(2027, 2, 1))).toEqual([
+      { year: 2026, month: 11, at: vn(2026, 11, 1) },
+      { year: 2026, month: 12, at: vn(2026, 12, 1) },
+      { year: 2027, month: 1, at: vn(2027, 1, 1) },
+    ]);
   });
 });
 

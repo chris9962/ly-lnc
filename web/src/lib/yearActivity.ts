@@ -10,6 +10,27 @@ export function yearBounds(year: number) {
   return { from: Date.UTC(year, 0, 1) - VN_OFFSET_MS, to: Date.UTC(year + 1, 0, 1) - VN_OFFSET_MS };
 }
 
+const monthStart = (year: number, monthIndex: number) => Date.UTC(year, monthIndex, 1) - VN_OFFSET_MS;
+
+// khoảng trục thời gian của biểu đồ: trọn các tháng có bài làm
+export function monthSpan(timestamps: number[]): { from: number; to: number } | null {
+  if (!timestamps.length) return null;
+  const first = local(Math.min(...timestamps));
+  const last = local(Math.max(...timestamps));
+  return { from: monthStart(first.getUTCFullYear(), first.getUTCMonth()), to: monthStart(last.getUTCFullYear(), last.getUTCMonth() + 1) };
+}
+
+export function monthStarts(from: number, to: number): { year: number; month: number; at: number }[] {
+  const start = local(from);
+  const list: { year: number; month: number; at: number }[] = [];
+  for (let index = start.getUTCMonth(), year = start.getUTCFullYear(); ; index++) {
+    const at = monthStart(year, index);
+    if (at >= to) return list;
+    const date = local(at);
+    list.push({ year: date.getUTCFullYear(), month: date.getUTCMonth() + 1, at });
+  }
+}
+
 const round2 = (value: number) => Math.round(value * 100) / 100;
 
 export type FormatStats = { submitted: number; average: number | null; best: number | null; scale: number | null };

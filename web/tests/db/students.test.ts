@@ -35,12 +35,13 @@ afterEach(() => {
   vi.useRealTimers();
 });
 
-function examAt(time: number, title: string, take: boolean) {
+function examAt(time: number, title: string, take: boolean, grade: 11 | 12 = 12) {
   vi.setSystemTime(time);
-  const created = createExam(teacher, { title, grade: 12, paperId, durationMinutes: 30, startsAt: null, endsAt: time + 60 * MINUTE });
+  const created = createExam(teacher, { title, grade, paperId, durationMinutes: 30, startsAt: null, endsAt: time + 60 * MINUTE });
   if (!created.ok) throw new Error(created.message);
   if (!take) return created.id;
-  const begun = startAttempt(student, created.id);
+  // học sinh vào thi lúc còn ở khối của kỳ thi đó
+  const begun = startAttempt({ ...student, grade }, created.id);
   if (!begun.ok) throw new Error(begun.message);
   vi.setSystemTime(time + 10 * MINUTE);
   if (!submitAttempt(student, begun.attemptId).ok) throw new Error("submit");
@@ -48,39 +49,46 @@ function examAt(time: number, title: string, take: boolean) {
 }
 
 describe("getStudentProfile", () => {
-  it("tách theo năm: bài đã nộp, kỳ thi bỏ lỡ, điểm trung bình riêng từng năm", () => {
+  it("lấy bài làm theo khối của kỳ thi, mặc định là khối hiện tại, không tách theo năm", () => {
     vi.useFakeTimers({ toFake: ["Date"] });
-    const old = examAt(vn(2025, 12, 31, 22), "Cuối năm 2025", true);
-    const taken = examAt(vn(2026, 3, 10), "Giữa kì 2026", true);
+    const old11 = examAt(vn(2025, 3, 5), "Khối 11 đã làm", true, 11);
+    examAt(vn(2025, 4, 5), "Khối 11 không vào thi", false, 11);
+    const taken25 = examAt(vn(2025, 12, 31, 22), "Cuối năm 2025", true);
+    const taken26 = examAt(vn(2026, 3, 10), "Giữa kì 2026", true);
     const missed = examAt(vn(2026, 5, 20), "Cuối kì 2026", false);
     vi.setSystemTime(vn(2026, 11, 11));
 
-    const profile = getStudentProfile(teacher, student.id, 2026);
+    const profile = getStudentProfile(teacher, student.id, undefined);
     if (!profile.ok) throw new Error(profile.message);
     expect(profile.student).toMatchObject({ id: student.id, fullName: "Trò Hồ Sơ", grade: 12 });
-    expect(profile.year).toBe(2026);
-    expect(profile.years).toEqual([2026, 2025]);
+    expect(profile.grade).toBe(12);
+    expect(profile.grades).toEqual([12, 11]);
     expect(profile.entries.map((entry) => [entry.examId, entry.status])).toEqual([
       [missed, "absent"],
-      [taken, "submitted"],
+      [taken26, "submitted"],
+      [taken25, "submitted"],
     ]);
     expect(profile.entries[1]).toMatchObject({ day: "2026-03-10", score: 0, maxScore: 10, format: "thpt" });
     expect(profile.stats).toEqual({
       working: 0,
       absent: 1,
-      thpt: { submitted: 1, average: 0, best: 0, scale: 10 },
+      thpt: { submitted: 2, average: 0, best: 0, scale: 10 },
       vsat: { submitted: 0, average: null, best: null, scale: null },
     });
 
-    const last = getStudentProfile(teacher, student.id, 2025);
-    expect(last.ok && last.entries.map((entry) => entry.examId)).toEqual([old]);
-    // năm không hợp lệ thì về năm hiện tại
-    expect(getStudentProfile(teacher, student.id, undefined)).toMatchObject({ ok: true, year: 2026 });
+    // khối cũ: chỉ có bài đã làm, không đếm kỳ thi không vào thi vì không biết học sinh ở khối đó tới khi nào
+    const last = getStudentProfile(teacher, student.id, 11);
+    if (!last.ok) throw new Error(last.message);
+    expect(last.grade).toBe(11);
+    expect(last.entries.map((entry) => entry.examId)).toEqual([old11]);
+    expect(last.stats.absent).toBe(0);
+    // khối học sinh chưa từng có bài thì về khối hiện tại
+    expect(getStudentProfile(teacher, student.id, 10)).toMatchObject({ ok: true, grade: 12 });
   });
 
   it("học sinh không xem được, tài khoản không phải học sinh trả 404", () => {
-    expect(getStudentProfile(student, student.id, 2026)).toMatchObject({ ok: false, status: 403 });
-    expect(getStudentProfile(teacher, teacher.id, 2026)).toMatchObject({ ok: false, status: 404 });
-    expect(getStudentProfile(teacher, 999999, 2026)).toMatchObject({ ok: false, status: 404 });
+    expect(getStudentProfile(student, student.id, 12)).toMatchObject({ ok: false, status: 403 });
+    expect(getStudentProfile(teacher, teacher.id, 12)).toMatchObject({ ok: false, status: 404 });
+    expect(getStudentProfile(teacher, 999999, 12)).toMatchObject({ ok: false, status: 404 });
   });
 });
