@@ -2,6 +2,8 @@
 
 Kế hoạch và các quyết định thiết kế: `KE-HOACH.md`.
 
+Cài đặt trên máy mới: `SETUP.md`. Khi chủ dự án yêu cầu "setup máy prod", làm theo `SETUP.md` mục 10 từ đầu tới cuối.
+
 ## Phạm vi áp dụng cho LNC
 
 Chốt ngày 2026-11-11. Bộ quy tắc bên dưới lấy từ một dự án khác, các điểm sau khác đi ở LNC:

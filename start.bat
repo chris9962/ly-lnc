@@ -32,6 +32,9 @@ if not exist .next\BUILD_ID (
 rem tang so luong xu ly nen de dang nhap va doc anh khong cho nhau khi dong nguoi vao cung luc
 set UV_THREADPOOL_SIZE=16
 
+rem tren may moi thu muc data chua co, thieu no thi khong ghi duoc nhat ky tunnel va cloudflared khong chay
+if not exist data mkdir data
+
 set TUNNEL=khong chay
 where cloudflared >nul 2>nul
 if not errorlevel 1 if exist "%USERPROFILE%\.cloudflared\config.yml" (

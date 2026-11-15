@@ -2,7 +2,9 @@
 
 File này dành cho người hoặc agent dựng lại hệ thống trên máy khác. Quy tắc viết mã: `CLAUDE.md`. Thiết kế và lộ trình: `KE-HOACH.md`. Chi tiết lệnh và cấu trúc mã: `web/README.md`.
 
-Trạng thái ghi ngày 2026-11-13.
+Trạng thái ghi ngày 2026-11-15.
+
+Khi chủ dự án yêu cầu "setup máy prod" trên một máy, agent làm theo mục 10 từ đầu tới cuối. Các mục 2 đến 8 là phần chi tiết mà mục 10 dẫn tới.
 
 ## 1. Hệ thống gồm những gì
 
@@ -75,48 +77,168 @@ Sao lưu định kỳ cũng là chép thư mục này. Đặt biến môi trư�
 
 ## 6. Cloudflare Tunnel
 
-Tên miền đã có. Tính đến ngày 2026-11-13, máy phát triển chưa cài `cloudflared` và chưa tạo tunnel. Các bước dưới đây chưa được chạy thử.
+### 6.1 Trạng thái ngày 2026-11-15
+
+| Mục | Giá trị |
+|---|---|
+| Tên miền | `ly-lncom.xyz`, hết hạn 2029-11-11 |
+| Nhà đăng ký | P.A Việt Nam, trang quản lý https://access.pavietnam.vn |
+| Cloudflare | Tên miền nằm trong tài khoản Cloudflare của chủ dự án, gói Free |
+| Nameserver | `iris.ns.cloudflare.com`, `ken.ns.cloudflare.com`, đổi ngày 2026-11-15 |
+| DNSSEC | Tắt |
+| Bản ghi DNS | Chưa có bản ghi nào |
+| Tunnel | Chưa tạo tunnel nào |
+
+Việc đưa tên miền về Cloudflare đã xong, không làm lại. Các bước từ 6.4 trở đi chưa được chạy thử trên máy nào. Bước nào chạy xong thì sửa lại bảng này.
+
+### 6.2 Cách hoạt động
+
+1. Trên máy chủ, `cloudflared` mở kết nối đi ra tới Cloudflare và giữ kết nối đó.
+2. Bản ghi DNS của tên miền là một CNAME trỏ tới `<MÃ-TUNNEL>.cfargotunnel.com`.
+3. Trình duyệt của học sinh kết nối tới Cloudflare bằng HTTPS.
+4. Cloudflare gửi yêu cầu qua kết nối ở bước 1 xuống `cloudflared`.
+5. `cloudflared` chuyển yêu cầu tới `http://127.0.0.1:3000`.
+
+Không mở cổng modem, không cần IP tĩnh, không cần chứng chỉ HTTPS riêng.
+
+### 6.3 Phân chia tunnel và các file khoá
+
+Mỗi máy dùng một tunnel riêng và một địa chỉ riêng:
+
+| Máy | Tên tunnel | Địa chỉ |
+|---|---|---|
+| Máy thi (prod) | `lnc` | `ly-lncom.xyz` |
+| Máy phát triển | `lnc-dev` | `dev.ly-lncom.xyz` |
+
+Một địa chỉ chỉ trỏ tới một tunnel. Tại một thời điểm, một tunnel chỉ chạy trên một máy. Hai máy chạy cùng một tunnel thì Cloudflare chia yêu cầu giữa hai máy. Mỗi máy có database riêng, nên học sinh thấy dữ liệu khác nhau giữa các lần tải trang.
+
+Thư mục `%USERPROFILE%\.cloudflared\` có ba file:
+
+| File | Lệnh tạo ra | Tác dụng |
+|---|---|---|
+| `cert.pem` | `cloudflared tunnel login` | Quyền quản lý. Lệnh tạo tunnel, xoá tunnel và tạo bản ghi DNS cần file này |
+| `<MÃ-TUNNEL>.json` | `cloudflared tunnel create` | Khoá để chạy một tunnel. Lệnh `cloudflared tunnel run` cần file này |
+| `config.yml` | Tự viết | Mã tunnel, đường dẫn file khoá, địa chỉ và cổng của web app |
+
+Người có `cert.pem` sửa được DNS của tên miền. Người có file `.json` chạy được tunnel dưới tên miền. Không đưa thư mục `.cloudflared` vào git, không gửi cho người khác, không in nội dung hai file này ra log hay khung chat.
+
+### 6.4 Dựng tunnel `lnc` trên máy thi (Windows)
 
 Mọi bước chỉ làm một lần trên mỗi máy. Sau đó chỉ cần bấm `start.bat`.
 
-1. Đưa tên miền về Cloudflare: thêm tên miền ở https://dash.cloudflare.com (gói Free), đổi nameserver ở nơi mua tên miền, chờ trạng thái "Active".
-2. Cài cloudflared, rồi mở lại cửa sổ lệnh:
+1. Cài `cloudflared`, rồi mở lại cửa sổ lệnh:
    ```
    winget install --id Cloudflare.cloudflared
+   cloudflared --version
    ```
-3. Đăng nhập. Bước này mở trình duyệt, chủ tài khoản Cloudflare phải tự bấm Authorize:
+2. Đăng nhập. Lệnh mở trình duyệt. Chủ tài khoản Cloudflare phải tự đăng nhập, chọn `ly-lncom.xyz` và bấm Authorize. Lệnh ghi `cert.pem` vào `%USERPROFILE%\.cloudflared\`:
    ```
    cloudflared tunnel login
    ```
-4. Tạo tunnel. Lệnh in ra mã tunnel và tạo file khoá `<MÃ-TUNNEL>.json` trong `%USERPROFILE%\.cloudflared\`:
+3. Xem tunnel `lnc` đã có chưa:
+   ```
+   cloudflared tunnel list
+   ```
+4. Nếu chưa có tunnel `lnc`, tạo mới. Lệnh in ra mã tunnel và ghi file `<MÃ-TUNNEL>.json`:
    ```
    cloudflared tunnel create lnc
    ```
-5. Tạo file `%USERPROFILE%\.cloudflared\config.yml`. Thay mã tunnel và tên miền:
+5. Nếu tunnel `lnc` đã có từ một máy thi cũ, không tạo lại. Tắt tunnel trên máy cũ trước, rồi lấy file khoá về máy này. Thay `<MÃ-TUNNEL>` bằng mã ở bước 3:
+   ```
+   cloudflared tunnel token --cred-file "%USERPROFILE%\.cloudflared\<MÃ-TUNNEL>.json" lnc
+   ```
+6. Tạo file `%USERPROFILE%\.cloudflared\config.yml`. Thay mã tunnel và tên user của Windows:
    ```yaml
    tunnel: <MÃ-TUNNEL>
    credentials-file: C:\Users\<TÊN-USER>\.cloudflared\<MÃ-TUNNEL>.json
    ingress:
-     - hostname: thi.tenmien.vn
+     - hostname: ly-lncom.xyz
        service: http://127.0.0.1:3000
      - service: http_status:404
    ```
-6. Tạo bản ghi DNS trỏ tên miền về tunnel:
+7. Kiểm tra file cấu hình. Lệnh phải in `OK`:
    ```
-   cloudflared tunnel route dns lnc thi.tenmien.vn
+   cloudflared tunnel ingress validate
    ```
-7. Chạy `start.bat`. Cửa sổ phải hiện "Tunnel: dang chay". Nhật ký tunnel nằm ở `web/data/cloudflared.log`.
-8. Mở tên miền trên điện thoại dùng 4G để chắc chắn vào được từ ngoài mạng.
+8. Tạo bản ghi DNS trỏ tên miền về tunnel. Cloudflare cho phép CNAME ở tên miền gốc:
+   ```
+   cloudflared tunnel route dns lnc ly-lncom.xyz
+   ```
+   Nếu lệnh báo bản ghi đã tồn tại và bản ghi đó trỏ tới tunnel khác, hỏi chủ dự án trước khi thêm `--overwrite-dns`.
+9. Chạy `start.bat`. Cửa sổ phải hiện "Tunnel: dang chay". Nhật ký tunnel nằm ở `web/data/cloudflared.log`.
+10. Kiểm tra theo mục 6.6.
 
-Chuyển tunnel sang máy khác: chép thư mục `%USERPROFILE%\.cloudflared\` sang máy mới và sửa đường dẫn `credentials-file` cho đúng tên user. Không chạy cùng một tunnel trên hai máy cho hai bộ dữ liệu khác nhau, vì Cloudflare sẽ chia người dùng ngẫu nhiên giữa hai máy.
+Địa chỉ `www.ly-lncom.xyz` không tự hoạt động. Nếu cần, thêm một dòng `- hostname: www.ly-lncom.xyz` cùng `service` vào `config.yml`, rồi chạy `cloudflared tunnel route dns lnc www.ly-lncom.xyz`.
 
-Thư mục `.cloudflared` chứa khoá chạy tunnel dưới tên miền. Không đưa vào git, không gửi cho người khác.
+### 6.5 Dựng tunnel `lnc-dev` trên máy phát triển (macOS)
 
-Mã nguồn đã sẵn cho việc chạy sau tunnel, không cần sửa:
+Dùng để thử tunnel mà không chiếm địa chỉ của máy thi. Thư mục cấu hình là `~/.cloudflared/`.
+
+```
+brew install cloudflared
+cloudflared tunnel login
+cloudflared tunnel create lnc-dev
+```
+
+File `~/.cloudflared/config.yml`:
+
+```yaml
+tunnel: <MÃ-TUNNEL>
+credentials-file: /Users/<TÊN-USER>/.cloudflared/<MÃ-TUNNEL>.json
+ingress:
+  - hostname: dev.ly-lncom.xyz
+    service: http://127.0.0.1:3000
+  - service: http_status:404
+```
+
+```
+cloudflared tunnel route dns lnc-dev dev.ly-lncom.xyz
+cd web && bun run build && bunx next start -p 3000 -H 127.0.0.1
+cloudflared tunnel run
+```
+
+`start.bat` không chạy trên macOS, nên chạy web app và tunnel ở hai cửa sổ lệnh.
+
+### 6.6 Kiểm tra tunnel
+
+| Việc | Cách kiểm tra | Kết quả đạt |
+|---|---|---|
+| Web app chạy trên máy | `curl -sI http://127.0.0.1:3000/login` | Dòng đầu có `200` |
+| Tunnel đã kết nối | `cloudflared tunnel info lnc` | Có ít nhất một dòng connector |
+| Tên miền vào được | `curl -sI https://ly-lncom.xyz/login` | Dòng đầu có `200`, có header `server: cloudflare` |
+| Vào được từ ngoài mạng | Mở tên miền trên điện thoại dùng 4G | Hiện trang đăng nhập |
+| Cookie đăng nhập | Đăng nhập qua tên miền, mở DevTools, mục Application, Cookies | Cookie `lnc_session` có đánh dấu Secure và HttpOnly |
+| Thao tác ghi | Đổi mật khẩu hoặc tạo một học sinh qua tên miền | Không gặp lỗi "Yêu cầu không hợp lệ" |
+
+Lỗi thường gặp:
+
+| Hiện tượng | Nguyên nhân | Cách xử lý |
+|---|---|---|
+| Lỗi 1033 hoặc 530 | `cloudflared` không chạy hoặc máy mất mạng | Xem `web/data/cloudflared.log`, chạy lại `start.bat` |
+| Lỗi 502 | Tunnel chạy nhưng web app không chạy ở cổng 3000 | Xem cửa sổ `start.bat` |
+| Tên miền không phân giải | Chưa chạy lệnh `route dns` | Làm bước 8 của mục 6.4 |
+| Cửa sổ ghi "Tunnel: khong chay" | Thiếu `cloudflared` hoặc thiếu `config.yml` | Làm lại mục 6.4 |
+
+### 6.7 Cấu hình trên trang Cloudflare
+
+Làm một lần cho tên miền, tại https://dash.cloudflare.com, chọn `ly-lncom.xyz`:
+
+- SSL/TLS, Edge Certificates: bật "Always Use HTTPS". Nếu tắt, người vào bằng `http://` nhận cookie không có Secure.
+- Security, Settings, "AI Crawler and Agent access policies": đặt Agents là Block. Website thi không có lý do để agent truy cập thay học sinh. Cloudflare chỉ chặn được agent tự khai danh tính.
+- "Enable Bot Preference Sync": để bật. Cloudflare ghi các lựa chọn Block vào `robots.txt`.
+- Không bật DNSSEC khi chưa cần. Không làm mục "Only allow Cloudflare IP addresses at your origin", vì web app chỉ lắng nghe `127.0.0.1`.
+
+Gói Free giới hạn mỗi yêu cầu tải lên 100 MB. File PDF đề nhỏ hơn mức này.
+
+### 6.8 Mã nguồn đã sẵn cho việc chạy sau tunnel
+
+Không cần sửa mã:
 
 - Cookie đăng nhập tự bật `secure` khi yêu cầu tới qua HTTPS (`x-forwarded-proto`).
 - Giới hạn đăng nhập sai lấy địa chỉ người dùng từ header `cf-connecting-ip`.
 - Kiểm tra `origin` so với `x-forwarded-host`.
+
+Ba điểm này chưa được kiểm chứng qua tunnel thật. Bảng ở mục 6.6 kiểm chứng điểm thứ nhất và thứ ba.
 
 ## 7. Kiểm tra sau khi dựng
 
@@ -146,9 +268,91 @@ Chủ dự án yêu cầu không chạy E2E sau từng thay đổi nhỏ. Chỉ 
 
 ## 9. Việc chưa xong
 
-- Cloudflare Tunnel: chưa cài, chưa thử (mục 6).
+- Cloudflare Tunnel: tên miền `ly-lncom.xyz` đã về Cloudflare ngày 2026-11-15. Chưa tạo tunnel, chưa thử (mục 6.1).
 - Chưa có shortcut `start.bat` trên Desktop, chưa tự chạy khi mở máy.
 - Chưa có sao lưu tự động.
 - Tính năng chưa làm: nhiều mã đề cho một kỳ thi, chế độ xem nguyên PDF kèm phiếu trả lời.
 - Nút "Cho thi lại" hiện mở lại bài cũ để làm tiếp, giữ câu đã chọn. Chưa chốt có đổi thành làm lại từ đầu hay không.
 - Dữ liệu trên máy phát triển có 46 kỳ thi mẫu tên "Kiểm tra THPT tháng MM/YYYY" và "Thi thử VSAT tháng MM/YYYY" cùng đề "Thi thử VSAT đề 07", thêm ngày 2026-11-11 để xem giao diện. Bài làm mẫu chỉ có điểm, không có câu trả lời. Nếu chép `web/data/` sang máy thi thật thì cần xoá các kỳ thi này trước.
+
+## 10. Quy trình setup máy prod
+
+Agent làm theo mục này khi chủ dự án yêu cầu "setup máy prod" trên một máy Windows. Làm đúng thứ tự. Bước nào không đạt thì dừng, báo nguyên văn thông báo lỗi, không tự bỏ qua.
+
+### 10.1 Quy tắc
+
+- Không in mật khẩu, nội dung `cert.pem`, nội dung file `.json` của tunnel hay nội dung `admin-account.txt` ra khung chat.
+- Không đưa `.cloudflared` hay `web/data/` vào git. Không commit, không push khi chưa được yêu cầu.
+- Không chạy tunnel `lnc` trên máy này khi một máy khác còn chạy tunnel `lnc`.
+- Không chép `web/data/` của máy phát triển sang máy prod. Thư mục đó có 46 kỳ thi mẫu.
+- Việc cần người làm thì nêu rõ và chờ: đăng nhập GitHub, bấm Authorize của Cloudflare, bấm đúp `start.bat`, đổi mật khẩu admin.
+
+### 10.2 Câu hỏi cho chủ dự án trước khi bắt đầu
+
+1. Máy này là máy thi đầu tiên, hay thay cho một máy thi cũ?
+2. Nếu thay máy cũ: máy cũ đã tắt `start.bat` chưa, và có cần chuyển dữ liệu `web/data/` sang không?
+3. Có dùng thêm địa chỉ `www.ly-lncom.xyz` không?
+
+### 10.3 Các bước
+
+| Bước | Việc | Ai làm | Chi tiết |
+|---|---|---|---|
+| 1 | Kiểm tra máy là Windows 11 và có mạng | Agent | |
+| 2 | Kiểm tra và cài phần mềm thiếu | Agent | Bảng dưới, mục 2 |
+| 3 | Lấy mã nguồn nhánh `dev` | Agent, chủ dự án đăng nhập GitHub nếu được hỏi | Mục 3 |
+| 4 | Cài thư viện và build | Agent | `cd web`, `bun install`, `bun run build` |
+| 5 | Chạy kiểm tra mã | Agent | `bunx tsc --noEmit`, `bun run lint`, `bun run test`, `bun test:db` |
+| 6 | Chuẩn bị dữ liệu | Agent | Máy đầu tiên: để `web/data/` trống. Thay máy cũ: mục 5 |
+| 7 | Dựng tunnel `lnc` | Agent, chủ dự án bấm Authorize | Mục 6.4 |
+| 8 | Cấu hình trang Cloudflare | Chủ dự án | Mục 6.7 |
+| 9 | Chạy máy chủ | Chủ dự án bấm đúp `start.bat` | Mục 3 |
+| 10 | Kiểm tra tunnel | Agent và chủ dự án | Mục 6.6 |
+| 11 | Đổi mật khẩu admin, xoá `admin-account.txt` | Chủ dự án | Mục 4 |
+| 12 | Cấu hình Windows cho máy thi | Agent, chủ dự án | Bảng dưới, mục 8 |
+| 13 | Thử tải | Agent | `cd web`, `bun run load`. Mục 7 |
+| 14 | Tạo shortcut `start.bat` trên Desktop | Agent | |
+| 15 | Cập nhật tài liệu và báo cáo | Agent | Mục 10.4 |
+
+Agent không tự chạy `start.bat` trong phiên làm việc của mình. Máy chủ dừng khi phiên đó đóng. Chủ dự án bấm đúp `start.bat` để máy chủ chạy trong cửa sổ riêng.
+
+Lệnh cho bước 2. Chạy lệnh kiểm tra trước, chỉ cài phần mềm còn thiếu, rồi mở lại cửa sổ lệnh:
+
+| Phần mềm | Lệnh kiểm tra | Lệnh cài |
+|---|---|---|
+| Git for Windows | `git --version` | `winget install --id Git.Git` |
+| bun | `bun --version` | `powershell -c "irm bun.sh/install.ps1 \| iex"` |
+| Node.js 22 trở lên | `node --version` | `winget install --id OpenJS.NodeJS.LTS` |
+| cloudflared | `cloudflared --version` | `winget install --id Cloudflare.cloudflared` |
+
+Lệnh cho bước 3:
+
+```
+git clone https://github.com/chris9962/ly-lnc.git
+cd ly-lnc
+git checkout dev
+```
+
+Nếu thư mục `ly-lnc` đã có, chạy `git status` trước. Thư mục sạch thì `git pull` trên nhánh `dev`, rồi `bun install` và `bun run build` lại. Thư mục có thay đổi chưa commit thì hỏi chủ dự án.
+
+Lệnh cho bước 12. Tắt chế độ ngủ và ngủ đông khi cắm điện:
+
+```
+powercfg /change standby-timeout-ac 0
+powercfg /change hibernate-timeout-ac 0
+```
+
+Chủ dự án tự đặt giờ hoạt động của Windows Update trong Settings, Windows Update, Advanced options, Active hours, để máy không khởi động lại trong giờ thi.
+
+Bước 13 chạy máy chủ riêng ở cổng 3212 với thư mục dữ liệu tạm, không ảnh hưởng máy chủ đang chạy ở cổng 3000. Bước này cần các file PDF mẫu trong `template/`. Kết quả đạt: 200 học sinh, 0 lỗi.
+
+### 10.4 Điều kiện hoàn thành và báo cáo
+
+Máy prod sẵn sàng khi đủ các điều sau:
+
+- Bốn lệnh ở bước 5 đều đạt.
+- Mọi dòng trong bảng kiểm tra ở mục 6.6 đều đạt.
+- Mật khẩu admin đã đổi, file `admin-account.txt` đã xoá.
+- `bun run load` chạy xong không có lỗi.
+- Chế độ ngủ đã tắt.
+
+Sau khi xong, agent sửa bảng trạng thái ở mục 6.1 và mục 9 theo kết quả thật, ghi ngày dạng YYYY-MM-DD. Agent báo cáo cho chủ dự án: bước nào đạt, bước nào không đạt kèm thông báo lỗi, bước nào chưa làm. Việc còn lại sau quy trình này là sao lưu tự động, xem mục 9.
