@@ -119,9 +119,9 @@ export function Combobox({ label, value, onChange, search, placeholder, error, e
             load(value ? "" : text);
           }}
           onKeyDown={keyDown}
-          className={cx(fieldClass(!!error), "pr-9")}
+          className={cx(fieldClass(!!error), "pr-10")}
         />
-        <ChevronDown aria-hidden="true" className="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 text-muted" />
+        <ChevronDown aria-hidden="true" className="pointer-events-none absolute right-3.5 top-1/2 size-4 -translate-y-1/2 text-muted" />
         {open && (
           <ul id={listId} role="listbox" aria-label={label} className="absolute z-30 mt-1 max-h-72 w-full overflow-auto rounded-lg border border-line bg-surface py-1 shadow-lg">
             {loading && !options.length && <li className="px-3 py-2 text-muted">Đang tìm</li>}
