@@ -15,7 +15,7 @@ export default async function LoginPage() {
       <Card className="w-full max-w-sm">
         <div className="mb-5 flex items-center gap-3">
           <Logo size={52} />
-          <h1 className="text-3xl font-bold tracking-wider">{SITE_NAME}</h1>
+          <h1 className="text-lg font-bold leading-snug">{SITE_NAME}</h1>
         </div>
         <LoginForm />
       </Card>

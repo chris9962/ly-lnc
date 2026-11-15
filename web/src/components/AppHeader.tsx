@@ -4,7 +4,7 @@ import { Logo } from "@/components/Logo";
 import { NavLinks } from "@/components/NavLinks";
 import { UserMenu } from "@/components/UserMenu";
 import { can, homePath, type SessionUser } from "@/lib/permissions";
-import { SITE_NAME } from "@/lib/site";
+import { SITE_SHORT_NAME } from "@/lib/site";
 import { parseTheme, THEME_COOKIE } from "@/lib/theme";
 import { cx } from "./ui/cx";
 
@@ -25,7 +25,7 @@ export async function AppHeader({ user, wide }: { user: SessionUser; wide?: bool
       <div className={cx("mx-auto flex h-full flex-wrap content-center items-center justify-between gap-x-5 gap-y-1 px-4", wide ? "max-w-none" : "max-w-6xl")}>
         <Link href={homePath(user)} className="flex items-center gap-2 text-lg font-bold tracking-wider text-ink no-underline">
           <Logo />
-          {SITE_NAME}
+          {SITE_SHORT_NAME}
         </Link>
         <NavLinks links={links} />
         <UserMenu fullName={user.fullName} username={user.username} roleLabel={roleLabel(user)} theme={theme} />
