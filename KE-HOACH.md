@@ -364,8 +364,8 @@ Giai đoạn 2 và 3 đã làm xong ngày 2026-11-11:
 
 Còn mở:
 
-1. Domain: `ly-lncom.xyz`, đã trỏ nameserver về Cloudflare ngày 2026-11-15. Chưa tạo tunnel. Các bước còn lại nằm ở `SETUP.md` mục 6 và mục 10.
+1. Domain: `ly-lncom.xyz`, đã trỏ nameserver về Cloudflare ngày 2026-11-15. Tunnel thử `lnc-dev` chạy đạt ngày 2026-11-15 trên máy phát triển. Chưa tạo tunnel `lnc` trên máy thi. Các bước còn lại nằm ở `SETUP.md` mục 6 và mục 10.
 2. Thử tải giả lập đã chạy ngày 2026-11-11 trên máy phát triển (12 luồng CPU), lệnh `bun run load`. Kịch bản: học sinh đăng nhập rải trong 20 giây, sau đó tất cả cùng vào thi trong 2 giây, mỗi người mở 28 câu, lưu 28 đáp án cách nhau 0,5 đến 2,5 giây rồi nộp.
    - 200 học sinh: 12.601 yêu cầu, 0 lỗi. Bước chậm nhất là mở trang kỳ thi và trang làm bài lúc cùng vào, khoảng 0,8 giây. Lưu đáp án p95 là 15 ms.
    - 400 học sinh: 25.201 yêu cầu, 0 lỗi. Bước chậm nhất khoảng 2,4 giây. Lưu đáp án p95 là 54 ms.
-   - Chưa thử qua Cloudflare Tunnel và chưa thử trên máy sẽ dùng thật. Cần chạy lại `bun run load` trên máy đó trước kỳ thi đầu tiên.
+   - Chưa thử tải qua Cloudflare Tunnel và chưa thử trên máy sẽ dùng thật. Cần chạy lại `bun run load` trên máy đó trước kỳ thi đầu tiên.

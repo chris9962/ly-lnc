@@ -86,10 +86,12 @@ Sao lưu định kỳ cũng là chép thư mục này. Đặt biến môi trư�
 | Cloudflare | Tên miền nằm trong tài khoản Cloudflare của chủ dự án, gói Free |
 | Nameserver | `iris.ns.cloudflare.com`, `ken.ns.cloudflare.com`, đổi ngày 2026-11-15 |
 | DNSSEC | Tắt |
-| Bản ghi DNS | Chưa có bản ghi nào |
-| Tunnel | Chưa tạo tunnel nào |
+| Bản ghi DNS | CNAME `dev.ly-lncom.xyz` trỏ tới tunnel `lnc-dev`. Chưa có bản ghi cho `ly-lncom.xyz` |
+| Tunnel `lnc-dev` | Đã tạo ngày 2026-11-15 trên máy phát triển (macOS), chạy thử đạt |
+| Tunnel `lnc` | Chưa tạo. Tạo trên máy thi theo mục 6.4 |
+| Always Use HTTPS | Tắt. Ngày 2026-11-15, `http://dev.ly-lncom.xyz/login` trả 200, không chuyển sang HTTPS. Phải bật theo mục 6.7 |
 
-Việc đưa tên miền về Cloudflare đã xong, không làm lại. Các bước từ 6.4 trở đi chưa được chạy thử trên máy nào. Bước nào chạy xong thì sửa lại bảng này.
+Việc đưa tên miền về Cloudflare đã xong, không làm lại. Mục 6.5 đã chạy thử đạt ngày 2026-11-15 với `cloudflared` 2026.9.0. Mục 6.4 dùng cùng các lệnh `cloudflared` nhưng chưa chạy thử trên Windows. Bước nào chạy xong thì sửa lại bảng này.
 
 ### 6.2 Cách hoạt động
 
@@ -172,7 +174,7 @@ Mọi bước chỉ làm một lần trên mỗi máy. Sau đó chỉ cần bấ
 
 ### 6.5 Dựng tunnel `lnc-dev` trên máy phát triển (macOS)
 
-Dùng để thử tunnel mà không chiếm địa chỉ của máy thi. Thư mục cấu hình là `~/.cloudflared/`.
+Dùng để thử tunnel mà không chiếm địa chỉ của máy thi. Thư mục cấu hình là `~/.cloudflared/`. Tunnel `lnc-dev`, file `config.yml` và bản ghi DNS đã có trên máy phát triển từ ngày 2026-11-15. Trên máy đó chỉ cần chạy hai lệnh cuối. Các lệnh tạo dưới đây dành cho máy phát triển khác.
 
 ```
 brew install cloudflared
@@ -193,11 +195,16 @@ ingress:
 
 ```
 cloudflared tunnel route dns lnc-dev dev.ly-lncom.xyz
-cd web && bun run build && bunx next start -p 3000 -H 127.0.0.1
+```
+
+`start.bat` không chạy trên macOS, nên chạy web app và tunnel ở hai cửa sổ lệnh:
+
+```
+cd web && bun run build && DATA_DIR="$(mktemp -d)" SEED_PAPERS=0 bunx next start -p 3000 -H 127.0.0.1
 cloudflared tunnel run
 ```
 
-`start.bat` không chạy trên macOS, nên chạy web app và tunnel ở hai cửa sổ lệnh.
+`DATA_DIR` tạm làm máy chủ bắt đầu với database trống và một tài khoản admin mới. Dữ liệu trong `web/data/` của máy phát triển không bị đưa ra internet. Dừng cả hai tiến trình sau khi thử xong. Khi tunnel dừng, tên miền trả lỗi 530.
 
 ### 6.6 Kiểm tra tunnel
 
@@ -238,7 +245,13 @@ Không cần sửa mã:
 - Giới hạn đăng nhập sai lấy địa chỉ người dùng từ header `cf-connecting-ip`.
 - Kiểm tra `origin` so với `x-forwarded-host`.
 
-Ba điểm này chưa được kiểm chứng qua tunnel thật. Bảng ở mục 6.6 kiểm chứng điểm thứ nhất và thứ ba.
+Ba điểm này đã được kiểm chứng qua tunnel `lnc-dev` ngày 2026-11-15:
+
+| Điểm | Cách thử | Kết quả |
+|---|---|---|
+| Cookie | Đăng nhập qua `https://dev.ly-lncom.xyz` | `Set-Cookie` có `Secure; HttpOnly; SameSite=lax` |
+| Kiểm tra `origin` | Gọi API đổi mật khẩu với `origin` đúng tên miền, rồi với `origin` lạ | `origin` đúng không bị chặn. `origin` lạ nhận 403 "Yêu cầu không hợp lệ" |
+| Giới hạn đăng nhập sai | 9 lần đăng nhập sai qua tên miền, mỗi lần giả một `x-forwarded-for` khác | 8 lần nhận 401, lần thứ 9 nhận 429. Máy chủ dùng `cf-connecting-ip`, header giả không có tác dụng |
 
 ## 7. Kiểm tra sau khi dựng
 
@@ -268,7 +281,7 @@ Chủ dự án yêu cầu không chạy E2E sau từng thay đổi nhỏ. Chỉ 
 
 ## 9. Việc chưa xong
 
-- Cloudflare Tunnel: tên miền `ly-lncom.xyz` đã về Cloudflare ngày 2026-11-15. Chưa tạo tunnel, chưa thử (mục 6.1).
+- Cloudflare Tunnel: tunnel `lnc-dev` chạy thử đạt ngày 2026-11-15. Chưa tạo tunnel `lnc` trên máy thi. Chưa bật "Always Use HTTPS" (mục 6.1).
 - Chưa có shortcut `start.bat` trên Desktop, chưa tự chạy khi mở máy.
 - Chưa có sao lưu tự động.
 - Tính năng chưa làm: nhiều mã đề cho một kỳ thi, chế độ xem nguyên PDF kèm phiếu trả lời.
