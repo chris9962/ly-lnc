@@ -7,12 +7,15 @@ import { ExamStatusTag } from "@/components/exams/ExamStatusTag";
 import { ReopenButton } from "@/components/exams/ReopenButton";
 import { Card } from "@/components/ui/Card";
 import { FilterBar } from "@/components/ui/FilterBar";
+import { hrefWith } from "@/components/ui/hrefWith";
 import { Pager } from "@/components/ui/Pager";
+import { SortHeader } from "@/components/ui/SortHeader";
 import { StatusTag } from "@/components/ui/StatusTag";
 import { rosterQuery } from "@/lib/examForm";
 import { formatDateTime, formatTime } from "@/lib/format";
 import { PAGE_SIZE } from "@/lib/paperForm";
 import { requirePage } from "@/lib/permissions";
+import { nextSort, sortRoster, type RosterSort } from "@/lib/rosterSort";
 import { formatScore } from "@/lib/scoring";
 import { searchKey } from "@/lib/username";
 import { examRoster, getExam, type RosterRow } from "@/server/exams";
@@ -48,13 +51,21 @@ export default async function ExamPage({ params, searchParams }: Props) {
   const scored = roster.rows.filter((row) => row.score !== null);
   const average = scored.length ? scored.reduce((sum, row) => sum + row.score!, 0) / scored.length : null;
 
-  // máy chủ lọc và chia trang danh sách học sinh
+  // máy chủ lọc, sắp xếp và chia trang danh sách học sinh
   const key = searchKey(query.q);
-  const filtered = roster.rows.filter((row) => (query.status === "all" || row.status === query.status) && (!key || searchKey(row.fullName).includes(key) || row.username.includes(key)));
+  const matched = roster.rows.filter((row) => (query.status === "all" || row.status === query.status) && (!key || searchKey(row.fullName).includes(key) || row.username.includes(key)));
+  const filtered = sortRoster(matched, query.sort, query.dir);
   const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const page = Math.min(query.page, pageCount);
   const rows = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
-  const params2 = { q: query.q, status: query.status === "all" ? undefined : query.status };
+  // thứ tự mặc định không ghi lên đường dẫn
+  const sorted = query.sort === "name" && query.dir === "asc" ? {} : { sort: query.sort, dir: query.dir };
+  const params2 = { q: query.q || undefined, status: query.status === "all" ? undefined : query.status, ...sorted };
+  const sortHeader = (column: RosterSort, label: string) => {
+    const next = nextSort(query, column);
+    const change = next.sort === "name" && next.dir === "asc" ? { sort: undefined, dir: undefined } : next;
+    return <SortHeader label={label} href={hrefWith(path, params2, change)} dir={query.sort === column ? query.dir : null} className={cell} />;
+  };
 
   return (
     <>
@@ -153,16 +164,17 @@ export default async function ExamPage({ params, searchParams }: Props) {
             },
           ]}
           values={{ status: query.status }}
+          keep={sorted}
         />
         {rows.length ? (
           <div className="overflow-x-auto">
             <table className="w-full min-w-[40rem] border-collapse text-left">
               <thead>
                 <tr className="border-b border-line text-xs uppercase tracking-wide text-muted">
-                  <th scope="col" className={cell}>Họ tên</th>
+                  {sortHeader("name", "Họ tên")}
                   <th scope="col" className={cell}>Số điện thoại</th>
-                  <th scope="col" className={cell}>Trạng thái</th>
-                  <th scope="col" className={cell}>Điểm</th>
+                  {sortHeader("status", "Trạng thái")}
+                  {sortHeader("score", "Điểm")}
                   <th scope="col" className={cell}>Thao tác</th>
                 </tr>
               </thead>
@@ -202,7 +214,7 @@ export default async function ExamPage({ params, searchParams }: Props) {
         ) : (
           <p className="py-8 text-center text-muted">{roster.rows.length ? "Không có học sinh khớp bộ lọc" : `Khối ${exam.grade} chưa có học sinh`}</p>
         )}
-        <Pager path={path} params={{ q: query.q || undefined, status: params2.status }} page={page} pageCount={pageCount} />
+        <Pager path={path} params={params2} page={page} pageCount={pageCount} />
       </Card>
     </>
   );

@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { isGrade, type Grade } from "./grades";
 import { MAX_TITLE } from "./paperForm";
+import { ROSTER_SORTS } from "./rosterSort";
 
 export const MAX_DURATION = 300;
 // giờ Việt Nam là UTC+7 quanh năm, không đổi giờ theo mùa
@@ -67,5 +68,7 @@ export const paperOptionsQuery = z.object({
 export const rosterQuery = z.object({
   q: z.string().trim().max(80).catch("").default(""),
   status: z.enum(["all", "submitted", "working", "absent"]).catch("all").default("all"),
+  sort: z.enum(ROSTER_SORTS).catch("name").default("name"),
+  dir: z.enum(["asc", "desc"]).catch("asc").default("asc"),
   page: z.coerce.number().int().min(1).catch(1).default(1),
 });
