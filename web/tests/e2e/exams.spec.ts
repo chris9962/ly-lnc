@@ -174,10 +174,14 @@ test("tạo kỳ thi thi ngay cho khối 12", async ({ browser }) => {
   await page.getByRole("button", { name: "Tạo kỳ thi" }).click();
   const dialog = page.getByRole("dialog");
   await dialog.getByLabel("Tên kỳ thi").fill(EXAM_TITLE);
-  await dialog.getByLabel("Khối").selectOption("12");
-  await dialog.getByRole("searchbox", { name: "Tìm đề thi" }).fill("nhiet e2e");
-  await dialog.getByText(PAPER_TITLE, { exact: true }).click();
-  await expect(dialog.getByRole("radio", { name: new RegExp(PAPER_TITLE) })).toBeChecked();
+  await dialog.getByText("Khối 12", { exact: true }).click();
+  // đề chọn trong một hộp thoại riêng, chọn xong form chỉ hiện tên đề và nút Đổi đề
+  await dialog.getByRole("button", { name: "Chọn đề" }).click();
+  const picker = page.getByRole("dialog", { name: /Chọn đề thi/ });
+  await picker.getByRole("searchbox", { name: "Tìm đề thi" }).fill("nhiet e2e");
+  await picker.getByRole("button", { name: new RegExp(PAPER_TITLE) }).click();
+  await expect(picker).toHaveCount(0);
+  await expect(dialog.getByRole("button", { name: "Đổi đề" })).toBeVisible();
   await dialog.getByLabel("Số phút làm bài").fill("30");
   await dialog.getByRole("button", { name: "Tạo kỳ thi" }).click();
 

@@ -1,10 +1,11 @@
 import "server-only";
 import { and, asc, count, desc, eq, gt, inArray, isNotNull, isNull, like, lte, or, sql, type SQL } from "drizzle-orm";
 import type { CreateExamInput, ListExamsQuery } from "@/lib/examForm";
+import { scoreBands, type ScoreBands } from "@/lib/examStats";
 import { PAGE_SIZE } from "@/lib/paperForm";
 import { can, type SessionUser } from "@/lib/permissions";
 import { searchKey } from "@/lib/username";
-import { finalizeOverdue } from "./attempts";
+import { finalizeOverdue, paperMax } from "./attempts";
 import { writeAudit } from "./audit";
 import { getDb, type Reader, type Tx } from "./db";
 import { attemptAnswers, attempts, examPapers, exams, papers, users } from "./db/schema";
@@ -25,6 +26,10 @@ export type ExamListItem = {
   paperTitle: string | null;
   started: number;
   submitted: number;
+  // số bài đã chấm và số bài đạt từ 6,5, từ 8 trên thang 10
+  bands: ScoreBands;
+  // thang điểm của đề, lấy từ bài làm nên chưa ai vào thi thì chưa có
+  maxScore: number | null;
   status: ExamStatus;
 };
 
@@ -63,7 +68,17 @@ export function listExams(user: SessionUser, query: ListExamsQuery): Result<{ ro
     .limit(PAGE_SIZE)
     .offset((page - 1) * PAGE_SIZE)
     .all();
-  return ok({ rows: rows.map((row) => ({ ...row, status: examStatus(row, now) })), total, page, pageSize: PAGE_SIZE });
+  // điểm của các kỳ thi trong trang lấy bằng một câu hỏi, rồi gom theo kỳ thi
+  const scored = rows.length
+    ? db
+        .select({ examId: attempts.examId, score: attempts.score, maxScore: attempts.maxScore })
+        .from(attempts)
+        .where(and(inArray(attempts.examId, rows.map((row) => row.id)), isNotNull(attempts.submittedAt), isNotNull(attempts.score)))
+        .all()
+    : [];
+  const byExam = new Map<number, { score: number; maxScore: number }[]>();
+  for (const row of scored) byExam.set(row.examId!, [...(byExam.get(row.examId!) ?? []), { score: row.score!, maxScore: row.maxScore }]);
+  return ok({ rows: rows.map((row) => ({ ...row, bands: scoreBands(byExam.get(row.id) ?? []), maxScore: byExam.get(row.id)?.[0].maxScore ?? null, status: examStatus(row, now) })), total, page, pageSize: PAGE_SIZE });
 }
 
 function checkPaper(tx: Tx, paperId: number): Result {
@@ -150,7 +165,7 @@ export function getExam(user: SessionUser, id: number): Result<{ exam: ExamDetai
   const paperId = examPaperId(db, id);
   const paper = paperId ? db.select({ title: papers.title, questionCount: papers.questionCount }).from(papers).where(eq(papers.id, paperId)).get() : undefined;
   const anyAttempt = db.select({ maxScore: attempts.maxScore }).from(attempts).where(eq(attempts.examId, id)).get();
-  return ok({ exam: { ...exam, paperId, paperTitle: paper?.title ?? null, questionCount: paper?.questionCount ?? 0, maxScore: anyAttempt?.maxScore ?? null, status: examStatus(exam) } });
+  return ok({ exam: { ...exam, paperId, paperTitle: paper?.title ?? null, questionCount: paper?.questionCount ?? 0, maxScore: anyAttempt?.maxScore ?? (paper && paperId ? paperMax(db, paperId) : null), status: examStatus(exam) } });
 }
 
 export type RosterRow = {

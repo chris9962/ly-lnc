@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { celebrationLevel, percent, scoreBands } from "@/lib/examStats";
+import { celebrationLevel, markOnScale, percent, scoreBands } from "@/lib/examStats";
 
 describe("scoreBands", () => {
   it("đếm bài đạt từ 6,5 và từ 8 trên thang 10, tính cả điểm đúng mốc", () => {
@@ -48,5 +48,13 @@ describe("celebrationLevel", () => {
     expect(celebrationLevel(120, 150)).toBe("great");
     expect(celebrationLevel(149.9, 150)).toBe("great");
     expect(celebrationLevel(150, 150)).toBe("perfect");
+  });
+});
+
+describe("markOnScale", () => {
+  it("đổi mốc thang 10 sang thang điểm của đề", () => {
+    expect(markOnScale(6.5, 150)).toBe(97.5);
+    expect(markOnScale(8, 150)).toBe(120);
+    expect(markOnScale(6.5, 10)).toBe(6.5);
   });
 });

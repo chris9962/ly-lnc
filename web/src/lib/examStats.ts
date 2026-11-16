@@ -8,6 +8,9 @@ export function scoreBands(results: { score: number; maxScore: number }[]): Scor
   return { total: marks.length, from65: marks.filter((mark) => mark >= 6.5).length, from8: marks.filter((mark) => mark >= 8).length };
 }
 
+// mốc 6,5 và 8 tính trên thang 10; đề VSAT thang 150 thì đổi ra 97,5 và 120 để hiển thị đúng thang của đề
+export const markOnScale = (mark: number, maxScore: number) => Math.round(mark * maxScore * 10) / 100;
+
 export const percent = (part: number, total: number) => (total > 0 ? Math.round((part / total) * 100) : null);
 
 export type CelebrationLevel = "good" | "great" | "perfect";

@@ -1,10 +1,11 @@
 "use client";
 
-import { CircleCheck, Circle, Search } from "lucide-react";
+import { Check, FileText, Search } from "lucide-react";
 import { useEffect, useId, useState } from "react";
+import { Button } from "@/components/ui/Button";
 import { cx } from "@/components/ui/cx";
+import { Dialog } from "@/components/ui/Dialog";
 import { fieldClass } from "@/components/ui/fieldClass";
-import { StatusTag } from "@/components/ui/StatusTag";
 import { formatDate } from "@/lib/format";
 import { FORMAT_NAMES, type PaperFormat } from "@/lib/paperLayout";
 
@@ -17,6 +18,7 @@ const DELAY_MS = 250;
 
 const details = (paper: PickedPaper) =>
   [
+    paper.format && FORMAT_NAMES[paper.format],
     paper.grade !== undefined && `Khối ${paper.grade}`,
     paper.questionCount !== undefined && `${paper.questionCount} câu`,
     paper.folderName && `thư mục ${paper.folderName}`,
@@ -25,12 +27,12 @@ const details = (paper: PickedPaper) =>
     .filter(Boolean)
     .join(", ");
 
-export function PaperPicker({ value, onChange, grade, error }: Props) {
-  const id = useId();
+// hộp tìm và chọn đề mở riêng, form kỳ thi chỉ giữ một dòng tên đề nên không bị đẩy dài ra
+function PaperSearchDialog({ value, grade, onPick, onClose }: { value: PickedPaper | null; grade: number | null; onPick: (paper: PickedPaper) => void; onClose: () => void }) {
   const [query, setQuery] = useState("");
   const [found, setFound] = useState<PickedPaper[] | null>(null);
 
-  // máy chủ tìm và lọc theo khối, trả tối đa 20 đề; huỷ lần gọi cũ khi gõ tiếp hoặc đổi khối
+  // máy chủ tìm và lọc theo khối, trả tối đa 20 đề; huỷ lần gọi cũ khi gõ tiếp
   useEffect(() => {
     const controller = new AbortController();
     const timer = setTimeout(async () => {
@@ -47,59 +49,94 @@ export function PaperPicker({ value, onChange, grade, error }: Props) {
     };
   }, [query, grade]);
 
-  // đề đang chọn luôn nằm trong danh sách, kể cả khi không khớp chữ đang tìm
-  const selected = value && (found?.find((paper) => paper.id === value.id) ?? value);
-  const rows = found ? [...(selected ? [selected] : []), ...found.filter((paper) => paper.id !== value?.id)] : selected ? [selected] : [];
-
   return (
-    <fieldset className="mb-4" aria-describedby={error ? `${id}-error` : undefined}>
-      <legend className="mb-1 font-semibold">Đề thi</legend>
-      <div className="relative mb-2">
+    <Dialog open onClose={onClose} title={grade ? `Chọn đề thi khối ${grade}` : "Chọn đề thi"} wide>
+      <div className="relative mb-3">
         <Search aria-hidden="true" className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted" />
         <input
           type="search"
           aria-label="Tìm đề thi"
           autoComplete="off"
+          autoFocus
           value={query}
-          placeholder={grade ? `Tìm đề khối ${grade} theo tên` : "Tìm đề theo tên"}
+          placeholder="Tìm đề theo tên"
           onChange={(event) => setQuery(event.target.value)}
-          // Enter trong ô tìm không được gửi cả form tạo kỳ thi
+          // hộp này nằm trong form kỳ thi, Enter ở ô tìm không được gửi form đó
           onKeyDown={(event) => event.key === "Enter" && event.preventDefault()}
-          className={cx(fieldClass(!!error), "pl-9")}
+          className={cx(fieldClass(false), "pl-9")}
         />
       </div>
-      <div className={cx("max-h-72 space-y-2 overflow-y-auto rounded-lg border bg-surface-alt p-2", error ? "border-danger" : "border-line")}>
-        {rows.map((paper) => {
-          const checked = paper.id === value?.id;
-          const Mark = checked ? CircleCheck : Circle;
+      <ul aria-label="Đề thi" className="max-h-[55vh] overflow-y-auto rounded-lg border border-line">
+        {found?.map((paper) => {
+          const current = paper.id === value?.id;
           return (
-            <label
-              key={paper.id}
-              className={cx(
-                "flex cursor-pointer items-start gap-3 rounded-lg border bg-surface px-3 py-2.5 has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-brand",
-                checked ? "border-brand ring-1 ring-brand" : "border-line hover:border-muted",
-              )}
-            >
-              <input type="radio" name="paperId" value={paper.id} checked={checked} onChange={() => onChange(paper)} className="sr-only" />
-              <Mark aria-hidden="true" className={cx("mt-0.5 size-5 flex-none", checked ? "text-brand" : "text-muted")} />
-              <span className="min-w-0 flex-1">
-                <span className={cx("block break-words", checked && "font-semibold")}>{paper.title}</span>
-                <span className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted">
-                  {paper.format && <StatusTag>{FORMAT_NAMES[paper.format]}</StatusTag>}
-                  {details(paper)}
+            <li key={paper.id} className="border-b border-line last:border-b-0">
+              <button
+                type="button"
+                aria-current={current ? "true" : undefined}
+                onClick={() => onPick(paper)}
+                className={cx("flex w-full cursor-pointer items-center gap-3 px-3 py-2.5 text-left transition-colors duration-150 hover:bg-surface-alt focus-visible:-outline-offset-2", current && "bg-surface-alt")}
+              >
+                <span className="min-w-0 flex-1">
+                  <span className={cx("block break-words", current && "font-semibold")}>{paper.title}</span>
+                  <span className="block text-sm text-muted">{details(paper)}</span>
                 </span>
-              </span>
-            </label>
+                {current && <Check aria-hidden="true" strokeWidth={2.6} className="size-5 flex-none text-brand" />}
+              </button>
+            </li>
           );
         })}
-        {found === null && !rows.length && <p className="px-2 py-3 text-muted">Đang tìm</p>}
-        {found !== null && !found.length && <p className="px-2 py-3 text-muted">Không có đề đủ đáp án khớp</p>}
+        {found === null && <li className="px-3 py-3 text-muted">Đang tìm</li>}
+        {found !== null && !found.length && <li className="px-3 py-3 text-muted">Không có đề đủ đáp án khớp</li>}
+      </ul>
+      <div className="mt-4 flex justify-end">
+        <Button onClick={onClose}>Đóng</Button>
+      </div>
+    </Dialog>
+  );
+}
+
+export function PaperPicker({ value, onChange, grade, error }: Props) {
+  const id = useId();
+  const [open, setOpen] = useState(false);
+
+  return (
+    <div className="mb-4">
+      <span id={`${id}-label`} className="mb-1 block font-semibold">
+        Đề thi
+      </span>
+      <div role="group" aria-labelledby={`${id}-label`} aria-describedby={error ? `${id}-error` : undefined} className={cx("flex items-center gap-3 rounded-lg border bg-surface px-3 py-2", error ? "border-danger" : "border-line")}>
+        <FileText aria-hidden="true" className={cx("size-5 flex-none", value ? "text-brand" : "text-muted")} />
+        <div className="min-w-0 flex-1">
+          {value ? (
+            <>
+              <p className="break-words font-semibold">{value.title}</p>
+              {details(value) && <p className="text-sm text-muted">{details(value)}</p>}
+            </>
+          ) : (
+            <p className="text-muted">Chưa chọn đề</p>
+          )}
+        </div>
+        <Button size="sm" variant={value ? "secondary" : "primary"} onClick={() => setOpen(true)}>
+          {value ? "Đổi đề" : "Chọn đề"}
+        </Button>
       </div>
       {error && (
         <p id={`${id}-error`} className="mt-1 text-sm text-danger">
           {error}
         </p>
       )}
-    </fieldset>
+      {open && (
+        <PaperSearchDialog
+          value={value}
+          grade={grade}
+          onClose={() => setOpen(false)}
+          onPick={(paper) => {
+            onChange(paper);
+            setOpen(false);
+          }}
+        />
+      )}
+    </div>
   );
 }

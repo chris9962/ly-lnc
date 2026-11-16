@@ -6,9 +6,11 @@ import { Card } from "@/components/ui/Card";
 import { FilterBar } from "@/components/ui/FilterBar";
 import { Pager } from "@/components/ui/Pager";
 import { listExamsQuery } from "@/lib/examForm";
+import { markOnScale, percent } from "@/lib/examStats";
 import { formatRange } from "@/lib/format";
 import { GRADE_OPTIONS } from "@/lib/grades";
 import { requirePage } from "@/lib/permissions";
+import { formatScore } from "@/lib/scoring";
 import { listExams } from "@/server/exams";
 
 export const metadata = { title: "Kỳ thi" };
@@ -54,7 +56,7 @@ export default async function ExamsPage({ searchParams }: { searchParams: Promis
         />
         {list.rows.length ? (
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[40rem] border-collapse text-left">
+            <table className="w-full min-w-[52rem] border-collapse text-left">
               <thead>
                 <tr className="border-b border-line text-xs uppercase tracking-wide text-muted">
                   <th scope="col" className={cell}>Kỳ thi</th>
@@ -62,6 +64,8 @@ export default async function ExamsPage({ searchParams }: { searchParams: Promis
                   <th scope="col" className={cell}>Thời gian</th>
                   <th scope="col" className={cell}>Trạng thái</th>
                   <th scope="col" className={cell}>Đã nộp</th>
+                  <th scope="col" className={cell}>Đạt mốc 6,5</th>
+                  <th scope="col" className={cell}>Đạt mốc 8</th>
                 </tr>
               </thead>
               <tbody>
@@ -85,6 +89,27 @@ export default async function ExamsPage({ searchParams }: { searchParams: Promis
                       {exam.submitted}
                       {exam.started > exam.submitted && <span className="text-sm text-muted">, {exam.started - exam.submitted} đang làm</span>}
                     </td>
+                    {(
+                      [
+                        [6.5, exam.bands.from65],
+                        [8, exam.bands.from8],
+                      ] as const
+                    ).map(([mark, count]) => (
+                      <td key={mark} className={`${cell} whitespace-nowrap`}>
+                        {exam.bands.total > 0 && exam.maxScore !== null && (
+                          <>
+                            <span className="font-semibold">{percent(count, exam.bands.total)}%</span>
+                            <span className="text-sm text-muted">
+                              , {count}/{exam.bands.total} bài
+                            </span>
+                            {/* mốc đã đổi sang thang điểm của đề, ví dụ đề VSAT là 97,5 và 120 trên 150 */}
+                            <div className="text-sm text-muted">
+                              từ {formatScore(markOnScale(mark, exam.maxScore))} / {formatScore(exam.maxScore)}
+                            </div>
+                          </>
+                        )}
+                      </td>
+                    ))}
                   </tr>
                 ))}
               </tbody>

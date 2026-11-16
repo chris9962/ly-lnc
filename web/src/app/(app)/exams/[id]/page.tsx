@@ -12,7 +12,7 @@ import { Pager } from "@/components/ui/Pager";
 import { SortHeader } from "@/components/ui/SortHeader";
 import { StatusTag } from "@/components/ui/StatusTag";
 import { rosterQuery } from "@/lib/examForm";
-import { percent, scoreBands } from "@/lib/examStats";
+import { markOnScale, percent, scoreBands } from "@/lib/examStats";
 import { formatDateTime, formatTime } from "@/lib/format";
 import { PAGE_SIZE } from "@/lib/paperForm";
 import { requirePage } from "@/lib/permissions";
@@ -52,6 +52,8 @@ export default async function ExamPage({ params, searchParams }: Props) {
   const scored = roster.rows.filter((row) => row.score !== null);
   const average = scored.length ? scored.reduce((sum, row) => sum + row.score!, 0) / scored.length : null;
   const bands = scoreBands(scored.map((row) => ({ score: row.score!, maxScore: row.maxScore ?? 0 })));
+  // mốc ghi theo thang điểm của đề; kỳ thi chưa có đề thì chưa biết thang nên ghi theo thang 10
+  const passMark = (mark: number) => (exam.maxScore ? `${formatScore(markOnScale(mark, exam.maxScore))} / ${formatScore(exam.maxScore)}` : `${formatScore(mark)} thang 10`);
   const share = (count: number) => (bands.total ? `${count}/${bands.total} bài, ${percent(count, bands.total)}%` : "Chưa có");
 
   // máy chủ lọc, sắp xếp và chia trang danh sách học sinh
@@ -152,8 +154,8 @@ export default async function ExamPage({ params, searchParams }: Props) {
       <div className="mb-4 grid gap-3 sm:grid-cols-3">
         {[
           ["Điểm trung bình", average === null ? "Chưa có" : `${formatScore(Math.round(average * 100) / 100)}${exam.maxScore ? ` / ${formatScore(exam.maxScore)}` : ""}`],
-          ["Đạt từ 6,5 thang 10", share(bands.from65)],
-          ["Đạt từ 8 thang 10", share(bands.from8)],
+          [`Đạt từ ${passMark(6.5)}`, share(bands.from65)],
+          [`Đạt từ ${passMark(8)}`, share(bands.from8)],
         ].map(([label, value]) => (
           <Card key={label} className="p-4">
             <p className="text-sm text-muted">{label}</p>

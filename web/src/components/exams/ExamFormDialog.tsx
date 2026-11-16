@@ -6,7 +6,6 @@ import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
 import { Dialog } from "@/components/ui/Dialog";
 import { Segmented } from "@/components/ui/Segmented";
-import { Select } from "@/components/ui/Select";
 import { TextField } from "@/components/ui/TextField";
 import { callApi, type ApiFail } from "@/lib/api";
 import type { AnswersAt } from "@/lib/examForm";
@@ -65,17 +64,14 @@ export function ExamFormDialog({ open, onClose, initial, started, locked }: Prop
       <form onSubmit={submit} noValidate>
         {error && !error.field && <Alert>{error.message}</Alert>}
         <TextField label="Tên kỳ thi" name="title" defaultValue={initial.title} maxLength={150} error={errorOf("title")} autoFocus={!editing} />
-        <div className="sm:w-40">
-          <Select
-            label="Khối"
-            name="grade"
-            value={grade ? String(grade) : ""}
-            onChange={(event) => setGrade(Number(event.target.value) || null)}
-            placeholder="Chọn khối"
-            options={GRADES.map((value) => ({ value: String(value), label: `Khối ${value}` }))}
-            error={errorOf("grade")}
-          />
-        </div>
+        <Segmented
+          label="Khối"
+          name="grade"
+          value={grade ? String(grade) : ""}
+          onChange={(value) => setGrade(Number(value))}
+          options={GRADES.map((value) => ({ value: String(value), label: `Khối ${value}` }))}
+          error={errorOf("grade")}
+        />
         {locked ? (
           <div className="mb-4">
             <span className="mb-1 block font-semibold">Đề thi</span>

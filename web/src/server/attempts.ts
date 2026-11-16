@@ -6,7 +6,7 @@ import { fitsShape, type AnswerValue, type PaperFormat, type QuestionShape } fro
 import { can, type SessionUser } from "@/lib/permissions";
 import { maxScore } from "@/lib/scoring";
 import { writeAudit } from "./audit";
-import { getDb, type Tx } from "./db";
+import { getDb, type Reader, type Tx } from "./db";
 import { attemptAnswers, attempts, examPapers, exams, paperContexts, paperQuestions, papers, users } from "./db/schema";
 import { examStatus, type ExamStatus } from "./exams";
 import { gradeAttempt, grade as gradeAll, loadAnswers } from "./grading";
@@ -77,7 +77,7 @@ export function myExams(user: SessionUser): Result<Record<ExamStatus, MyExam[]>>
   return ok(groups);
 }
 
-function paperMax(tx: Tx, paperId: number) {
+export function paperMax(tx: Reader, paperId: number) {
   const paper = tx.select({ scoring: papers.scoring }).from(papers).where(eq(papers.id, paperId)).get()!;
   const shapes = tx.select({ shape: paperQuestions.shape }).from(paperQuestions).where(eq(paperQuestions.paperId, paperId)).all();
   return maxScore(shapes.map((row) => row.shape), paper.scoring);

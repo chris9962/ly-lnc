@@ -1,8 +1,11 @@
 import fs from "node:fs";
 import path from "node:path";
+import { eq } from "drizzle-orm";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import { attemptStatus, getAttemptView, myExams, saveAnswer, startAttempt, startPractice, submitAttempt } from "@/server/attempts";
-import { createExam, deleteExam, examRoster, listExams, retakeAttempt, updateExam } from "@/server/exams";
+import { getDb } from "@/server/db";
+import { attempts } from "@/server/db/schema";
+import { createExam, deleteExam, examRoster, getExam, listExams, retakeAttempt, updateExam } from "@/server/exams";
 import { deletePaper, getPaper, paperImage, savePaperLayout, uploadPaper } from "@/server/papers";
 import { auditActions, makeUser } from "./helpers";
 
@@ -220,6 +223,31 @@ describe("quản lý kỳ thi", () => {
     expect(running.ok && running.rows.map((row) => row.id)).toEqual([created.id]);
     const ended = listExams(teacher, { q: "de loc", grade: undefined, status: "ended", page: 1 });
     expect(ended.ok && ended.rows).toEqual([]);
+  });
+
+  it("kỳ thi chưa ai vào thi vẫn biết thang điểm của đề", () => {
+    const created = exam({ title: "Kỳ thi chưa ai vào" });
+    if (!created.ok) throw new Error(created.message);
+    expect(getExam(teacher, created.id)).toMatchObject({ ok: true, exam: { maxScore: 10 } });
+  });
+
+  it("danh sách kỳ thi kèm số bài đạt từ 6,5 và từ 8 của từng kỳ", () => {
+    const created = exam({ title: "Kỳ thi có tỉ lệ" });
+    const empty = exam({ title: "Kỳ thi có tỉ lệ nhưng chưa ai nộp" });
+    if (!created.ok || !empty.ok) throw new Error("exam");
+    const begun = startAttempt(classmate, created.id);
+    const second = startAttempt(student, created.id);
+    if (!begun.ok || !second.ok) throw new Error("start");
+    expect(submitAttempt(classmate, begun.attemptId).ok).toBe(true);
+    expect(submitAttempt(student, second.attemptId).ok).toBe(true);
+    // đặt thẳng điểm để có một bài 8 điểm và một bài 7 điểm trên thang 10
+    getDb().update(attempts).set({ score: 8 }).where(eq(attempts.id, begun.attemptId)).run();
+    getDb().update(attempts).set({ score: 7 }).where(eq(attempts.id, second.attemptId)).run();
+
+    const list = listExams(teacher, { q: "co ti le", grade: 12, status: "all", page: 1 });
+    if (!list.ok) throw new Error(list.message);
+    expect(list.rows.find((row) => row.id === created.id)?.bands).toEqual({ total: 2, from65: 2, from8: 1 });
+    expect(list.rows.find((row) => row.id === empty.id)?.bands).toEqual({ total: 0, from65: 0, from8: 0 });
   });
 
   it("đã có bài làm thì không đổi đề, xoá kỳ thi xoá luôn bài làm", () => {
