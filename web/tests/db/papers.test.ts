@@ -117,6 +117,8 @@ describe("listPapers", () => {
 
     const options = paperOptions(teacher, { q: "lọc", grade: 11 });
     expect(options.ok && options.papers.map((paper) => paper.id)).toEqual([keyed]);
+    // ô chọn đề cần loại đề, thư mục và ngày sửa để phân biệt các đề trùng tên
+    expect(options.ok && Object.keys(options.papers[0])).toEqual(expect.arrayContaining(["format", "folderName", "updatedAt"]));
 
     // 05/11/2026 23:59 và 06/11/2026 00:00 giờ Việt Nam
     getDb().update(papers).set({ updatedAt: Date.UTC(2026, 10, 5, 16, 59) }).where(eq(papers.id, keyed)).run();

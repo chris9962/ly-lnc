@@ -96,6 +96,12 @@ describe("createExamForm", () => {
     expect(result.error?.issues[0]).toMatchObject({ path: ["endTime"] });
   });
 
+  it("thời điểm xem đáp án mặc định là sau khi kỳ thi kết thúc", () => {
+    expect(createExamForm.parse({ ...base, mode: "now" }).answersAt).toBe("end");
+    expect(createExamForm.parse({ ...base, mode: "now", answersAt: "submit" }).answersAt).toBe("submit");
+    expect(createExamForm.safeParse({ ...base, mode: "now", answersAt: "never" }).success).toBe(false);
+  });
+
   it("thời lượng từ 1 đến 300 phút", () => {
     expect(createExamForm.safeParse({ ...base, mode: "scheduled", duration: "0" }).success).toBe(false);
   });

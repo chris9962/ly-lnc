@@ -12,6 +12,7 @@ import { Pager } from "@/components/ui/Pager";
 import { SortHeader } from "@/components/ui/SortHeader";
 import { StatusTag } from "@/components/ui/StatusTag";
 import { rosterQuery } from "@/lib/examForm";
+import { percent, scoreBands } from "@/lib/examStats";
 import { formatDateTime, formatTime } from "@/lib/format";
 import { PAGE_SIZE } from "@/lib/paperForm";
 import { requirePage } from "@/lib/permissions";
@@ -50,6 +51,8 @@ export default async function ExamPage({ params, searchParams }: Props) {
   for (const row of roster.rows) counts[row.status]++;
   const scored = roster.rows.filter((row) => row.score !== null);
   const average = scored.length ? scored.reduce((sum, row) => sum + row.score!, 0) / scored.length : null;
+  const bands = scoreBands(scored.map((row) => ({ score: row.score!, maxScore: row.maxScore ?? 0 })));
+  const share = (count: number) => (bands.total ? `${count}/${bands.total} bài, ${percent(count, bands.total)}%` : "Chưa có");
 
   // máy chủ lọc, sắp xếp và chia trang danh sách học sinh
   const key = searchKey(query.q);
@@ -89,8 +92,9 @@ export default async function ExamPage({ params, searchParams }: Props) {
             id: exam.id,
             title: exam.title,
             grade: exam.grade,
-            paper: exam.paperId ? { value: exam.paperId, label: exam.paperTitle ?? "" } : null,
+            paper: exam.paperId ? { id: exam.paperId, title: exam.paperTitle ?? "" } : null,
             duration: exam.durationMinutes,
+            answersAt: exam.answersAt,
             startsAt: exam.startsAt,
             endsAt: exam.endsAt,
           }}
@@ -100,7 +104,7 @@ export default async function ExamPage({ params, searchParams }: Props) {
       </div>
 
       <Card className="mb-4">
-        <dl className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <dl className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
           <div>
             <dt className="text-sm text-muted">Đề thi</dt>
             <dd className="font-semibold">
@@ -126,15 +130,30 @@ export default async function ExamPage({ params, searchParams }: Props) {
             <dt className="text-sm text-muted">Thời gian làm bài</dt>
             <dd className="font-semibold">{exam.durationMinutes} phút</dd>
           </div>
+          <div>
+            <dt className="text-sm text-muted">Học sinh xem đáp án</dt>
+            <dd className="font-semibold">{exam.answersAt === "submit" ? "Sau khi nộp bài" : "Sau khi kỳ thi kết thúc"}</dd>
+          </div>
         </dl>
       </Card>
 
-      <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+      <div className="mb-3 grid grid-cols-3 gap-3">
         {[
           ["Đã nộp", counts.submitted],
           ["Đang làm", counts.working],
           ["Chưa vào thi", counts.absent],
+        ].map(([label, value]) => (
+          <Card key={label} className="p-4">
+            <p className="text-sm text-muted">{label}</p>
+            <p className="text-2xl font-bold">{value}</p>
+          </Card>
+        ))}
+      </div>
+      <div className="mb-4 grid gap-3 sm:grid-cols-3">
+        {[
           ["Điểm trung bình", average === null ? "Chưa có" : `${formatScore(Math.round(average * 100) / 100)}${exam.maxScore ? ` / ${formatScore(exam.maxScore)}` : ""}`],
+          ["Đạt từ 6,5 thang 10", share(bands.from65)],
+          ["Đạt từ 8 thang 10", share(bands.from8)],
         ].map(([label, value]) => (
           <Card key={label} className="p-4">
             <p className="text-sm text-muted">{label}</p>

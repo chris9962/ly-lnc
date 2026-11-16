@@ -6,7 +6,7 @@ import { baseUsername, searchKey } from "@/lib/username";
 import { writeAudit } from "./audit";
 import { getDb, type Tx } from "./db";
 import { users } from "./db/schema";
-import { hashPassword, randomPassword } from "./password";
+import { hashPassword, randomPassword, STUDENT_TEMP_PASSWORD } from "./password";
 import { fail, FORBIDDEN, NOT_FOUND, ok, type Result } from "./result";
 import { deleteSessionsOf } from "./session";
 
@@ -89,7 +89,7 @@ export async function createUsers(user: SessionUser, input: CreateUsersInput): P
   // băm mật khẩu trước vì transaction của SQLite chạy đồng bộ, không chờ được hàm bất đồng bộ
   const prepared = await Promise.all(
     input.people.map(async (person) => {
-      const password = randomPassword();
+      const password = isStudent ? STUDENT_TEMP_PASSWORD : randomPassword();
       return { ...person, password, passwordHash: await hashPassword(password) };
     }),
   );
@@ -127,7 +127,7 @@ export async function resetPassword(user: SessionUser, id: number): Promise<Resu
   const target = findManaged(user, id);
   if (!target) return NOT_FOUND;
 
-  const password = randomPassword();
+  const password = target.role === "student" ? STUDENT_TEMP_PASSWORD : randomPassword();
   const passwordHash = await hashPassword(password);
   getDb().transaction((tx) => {
     tx.update(users).set({ passwordHash, mustChangePassword: true }).where(eq(users.id, id)).run();

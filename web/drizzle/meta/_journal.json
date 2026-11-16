@@ -15,6 +15,13 @@
       "when": 1794389922141,
       "tag": "0001_pale_green_goblin",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1794835347489,
+      "tag": "0002_lush_drax",
+      "breakpoints": true
     }
   ]
 }

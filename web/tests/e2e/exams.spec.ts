@@ -175,8 +175,9 @@ test("tạo kỳ thi thi ngay cho khối 12", async ({ browser }) => {
   const dialog = page.getByRole("dialog");
   await dialog.getByLabel("Tên kỳ thi").fill(EXAM_TITLE);
   await dialog.getByLabel("Khối").selectOption("12");
-  await dialog.getByRole("combobox", { name: "Đề thi" }).pressSequentially("nhiet e2e");
-  await dialog.getByRole("option", { name: new RegExp(PAPER_TITLE) }).click();
+  await dialog.getByRole("searchbox", { name: "Tìm đề thi" }).fill("nhiet e2e");
+  await dialog.getByText(PAPER_TITLE, { exact: true }).click();
+  await expect(dialog.getByRole("radio", { name: new RegExp(PAPER_TITLE) })).toBeChecked();
   await dialog.getByLabel("Số phút làm bài").fill("30");
   await dialog.getByRole("button", { name: "Tạo kỳ thi" }).click();
 
@@ -213,7 +214,7 @@ test("học sinh vào thi, làm bài, nộp và thấy điểm ngay", async ({ p
   const next = newPassword("hs");
   await changePassword(page, state.student, next);
   state.student = next;
-  await expect(page).toHaveURL(/\/my-exams$/);
+  await expect(page).toHaveURL(/\/home$/);
 
   await page.getByRole("button", { name: "Vào thi" }).click();
   await expect(page.getByRole("dialog")).toContainText(`Bắt đầu làm bài ${EXAM_TITLE} trong 30 phút?`);
@@ -270,18 +271,17 @@ test("giáo viên thấy bài đã nộp, cho học sinh thi lại và tải b�
 
   const student = await browser.newPage();
   await login(student, STUDENT, state.student);
-  await expect(student.getByRole("link", { name: "Làm tiếp" })).toBeVisible();
+  await expect(student.getByRole("region", { name: "Đang diễn ra" }).getByRole("link", { name: "Làm tiếp" })).toBeVisible();
   await student.close();
 });
 
-test("trang chi tiết học sinh hiện hoạt động theo năm", async ({ browser }) => {
+test("trang chi tiết học sinh hiện kết quả theo khối", async ({ browser }) => {
   const page = await asAdmin(browser);
   await page.goto(`/students?q=${STUDENT}`);
   await page.getByRole("link", { name: "Hoc Sinh Thi" }).click();
   await page.waitForURL(/\/students\/\d+$/);
   await expect(page.getByRole("heading", { level: 1, name: "Hoc Sinh Thi" })).toBeVisible();
-  const year = new Date().getFullYear();
-  await expect(page.getByRole("heading", { level: 2, name: `Năm ${year}` })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 2, name: "Kết quả khối 12" })).toBeVisible();
   // tên học sinh ở danh sách bài nộp và trang bài làm cũng dẫn về trang này
   const studentPath = new URL(page.url()).pathname;
   await page.goto(`/exams/${state.examId}`);
@@ -298,7 +298,7 @@ test("trang chi tiết học sinh hiện hoạt động theo năm", async ({ bro
   const student = await browser.newPage();
   await login(student, STUDENT, state.student);
   await student.goto(studentUrl);
-  await expect(student).toHaveURL(/\/my-exams$/);
+  await expect(student).toHaveURL(/\/home$/);
   await student.close();
 });
 
@@ -318,7 +318,7 @@ test("giáo viên thi thử đề và thấy đáp án ngay sau khi nộp", asyn
 test("học sinh không xem được ngân hàng đề và kỳ thi của giáo viên", async ({ page }) => {
   await login(page, STUDENT, state.student);
   await page.goto("/papers");
-  await expect(page).toHaveURL(/\/my-exams$/);
+  await expect(page).toHaveURL(/\/home$/);
   const api = await page.request.get(`/api/papers/${state.paperId}/pages/0`);
   expect([403, 404]).toContain(api.status());
   const exam = await page.request.get(`/api/exams/${state.examId}/export`);

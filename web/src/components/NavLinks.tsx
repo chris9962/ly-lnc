@@ -8,7 +8,7 @@ export function NavLinks({ links }: { links: { href: string; label: string }[] }
   const pathname = usePathname();
   return (
     // màn hẹp đưa menu xuống hàng riêng và cuộn ngang thay vì vỡ dòng
-    <nav aria-label="Chính" className="order-last -mx-1 flex w-full gap-1 overflow-x-auto whitespace-nowrap px-1 pb-1 sm:order-none sm:mx-0 sm:w-auto sm:flex-1 sm:overflow-visible sm:p-0">
+    <nav aria-label="Chính" className="order-last -mx-1 flex w-full justify-center-safe gap-1 overflow-x-auto whitespace-nowrap px-1 pb-1 sm:order-none sm:mx-0 sm:w-auto sm:overflow-visible sm:p-0">
       {links.map((link) => {
         const active = pathname === link.href || pathname.startsWith(`${link.href}/`);
         return (

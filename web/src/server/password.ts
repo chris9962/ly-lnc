@@ -29,6 +29,9 @@ export async function verifyPassword(password: string, stored: string): Promise<
 // so sánh với hash giả khi tên đăng nhập không tồn tại, để thời gian phản hồi không lộ tài khoản nào có thật
 export const DUMMY_HASH = `scrypt$${"0".repeat(32)}$${"0".repeat(KEY_LENGTH * 2)}`;
 
+// chủ dự án chốt ngày 2026-11-16: mọi học sinh dùng chung một mật khẩu tạm, lần đăng nhập đầu vẫn bắt đổi
+export const STUDENT_TEMP_PASSWORD = "12345678";
+
 // bỏ các ký tự dễ đọc nhầm trên giấy: 0/o, 1/l/i
 const ALPHABET = "abcdefghjkmnpqrstuvwxyz23456789";
 

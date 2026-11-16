@@ -74,12 +74,15 @@ export function listPapers(user: SessionUser, query: ListPapersQuery): Result<{ 
   return ok({ rows, total, page, pageSize: PAGE_SIZE });
 }
 
-export function paperOptions(user: SessionUser, query: { q: string; grade?: number }): Result<{ papers: { id: number; title: string; grade: number; questionCount: number }[] }> {
+export type PaperOption = { id: number; title: string; grade: number; questionCount: number; format: PaperFormat; folderName: string | null; updatedAt: number };
+
+export function paperOptions(user: SessionUser, query: { q: string; grade?: number }): Result<{ papers: PaperOption[] }> {
   if (!can(user, "exams.manage")) return FORBIDDEN;
   const key = searchKey(query.q);
   const rows = getDb()
-    .select({ id: papers.id, title: papers.title, grade: papers.grade, questionCount: papers.questionCount })
+    .select({ id: papers.id, title: papers.title, grade: papers.grade, questionCount: papers.questionCount, format: papers.format, folderName: folders.name, updatedAt: papers.updatedAt })
     .from(papers)
+    .leftJoin(folders, eq(folders.id, papers.folderId))
     .where(and(fullyKeyed, query.grade !== undefined ? eq(papers.grade, query.grade) : undefined, key ? like(papers.searchTitle, `%${escapeLike(key)}%`) : undefined))
     .orderBy(desc(papers.updatedAt))
     .limit(20)

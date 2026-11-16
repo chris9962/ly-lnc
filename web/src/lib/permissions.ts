@@ -35,7 +35,7 @@ export const manageableRoles = (user: SessionUser): ManagedRole[] =>
 
 export function homePath(user: SessionUser): string {
   if (user.mustChangePassword) return "/change-password";
-  return can(user, "exams.take") ? "/my-exams" : "/exams";
+  return can(user, "exams.take") ? "/home" : "/exams";
 }
 
 const deny = (message: string, status: number) => NextResponse.json({ ok: false, message, status }, { status });

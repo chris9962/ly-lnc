@@ -145,19 +145,19 @@ test("admin tạo giáo viên", async ({ page }) => {
   secrets.teacherTemp = issued[0].password;
 });
 
-test("học sinh đổi mật khẩu tạm, vào trang kỳ thi, không vào được trang quản lý", async ({ page }) => {
+test("học sinh đổi mật khẩu tạm, vào trang chủ, không vào được trang quản lý", async ({ page }) => {
   // gõ số có khoảng trắng vẫn đăng nhập được
   await login(page, "0911 000 001", secrets.studentTemp);
   await expect(page).toHaveURL(/\/change-password$/);
   secrets.student = newPassword("hs");
   await changePassword(page, secrets.studentTemp, secrets.student);
-  await expect(page).toHaveURL(/\/my-exams$/);
+  await expect(page).toHaveURL(/\/home$/);
   await expect(page.getByText("Khối 11", { exact: true })).toBeVisible();
 
   await page.goto("/students");
-  await expect(page).toHaveURL(/\/my-exams$/);
+  await expect(page).toHaveURL(/\/home$/);
   await page.goto("/teachers");
-  await expect(page).toHaveURL(/\/my-exams$/);
+  await expect(page).toHaveURL(/\/home$/);
 
   const api = await page.request.get("/api/users?role=student");
   expect(api.status()).toBe(403);
@@ -182,7 +182,7 @@ test("giáo viên quản lý học sinh nhưng không đụng được tới gi�
   const studentContext = await browser.newContext();
   const studentPage = await studentContext.newPage();
   await login(studentPage, AN, secrets.student);
-  await expect(studentPage).toHaveURL(/\/my-exams$/);
+  await expect(studentPage).toHaveURL(/\/home$/);
 
   await page.goto(`/students?q=${AN}`);
   await row(page, AN).getByRole("button", { name: "Đặt lại mật khẩu" }).click();

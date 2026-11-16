@@ -1,6 +1,7 @@
 import "server-only";
 import { and, asc, eq, inArray, isNotNull, isNull, lte, or, type SQL } from "drizzle-orm";
 import type { SaveAnswerInput } from "@/lib/attemptForm";
+import type { AnswersAt } from "@/lib/examForm";
 import { fitsShape, type AnswerValue, type PaperFormat, type QuestionShape } from "@/lib/paperLayout";
 import { can, type SessionUser } from "@/lib/permissions";
 import { maxScore } from "@/lib/scoring";
@@ -137,6 +138,7 @@ export type AttemptView = {
     score: number | null;
     maxScore: number;
     examEndsAt: number | null;
+    answersAt: AnswersAt | null;
     ownerId: number;
     ownerName: string;
     ownerUsername: string;
@@ -175,9 +177,9 @@ export function getAttemptView(user: SessionUser, attemptId: number): Result<Att
     const answers = loadAnswers(tx, attempt.id);
     const now = Date.now();
 
-    // đáp án chỉ lộ ra khi bài đã nộp và kỳ thi đã kết thúc; thi thử thì xem ngay sau khi nộp
+    // đáp án chỉ lộ ra khi bài đã nộp, và kỳ thi đã kết thúc nếu giáo viên chọn chờ; thi thử thì xem ngay sau khi nộp
     const submitted = attempt.submittedAt !== null;
-    const showKeys = found.readOnly || (submitted && (!exam || now >= exam.endsAt));
+    const showKeys = found.readOnly || (submitted && (!exam || exam.answersAt === "submit" || now >= exam.endsAt));
     let review: AttemptView["review"] = null;
     if (showKeys && (submitted || found.readOnly)) {
       const graded = gradeAll(questions, answers, paper.scoring);
@@ -198,6 +200,7 @@ export function getAttemptView(user: SessionUser, attemptId: number): Result<Att
         score: attempt.score,
         maxScore: attempt.maxScore,
         examEndsAt: exam?.endsAt ?? null,
+        answersAt: exam?.answersAt ?? null,
         ownerId: attempt.userId,
         ownerName: owner.fullName,
         ownerUsername: owner.username,

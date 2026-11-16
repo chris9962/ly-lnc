@@ -135,6 +135,8 @@ export const exams = sqliteTable(
     startsAt: integer("starts_at").notNull(),
     endsAt: integer("ends_at").notNull(),
     durationMinutes: integer("duration_minutes").notNull(),
+    // học sinh xem đáp án ngay khi nộp bài, hoặc chờ tới giờ kết thúc kỳ thi
+    answersAt: text("answers_at", { enum: ["submit", "end"] }).notNull().default("end"),
     createdBy: integer("created_by").references(() => users.id, { onDelete: "set null" }),
     createdAt: integer("created_at").notNull(),
   },

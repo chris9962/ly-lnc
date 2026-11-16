@@ -7,7 +7,7 @@ import { getDb } from "@/server/db";
 import { users } from "@/server/db/schema";
 import { createExam } from "@/server/exams";
 import { uploadPaper } from "@/server/papers";
-import { getStudentProfile } from "@/server/students";
+import { getMyProfile, getStudentProfile } from "@/server/students";
 import { makeUser } from "./helpers";
 
 const TEMPLATE_DIR = path.resolve(__dirname, "../../../template");
@@ -37,7 +37,7 @@ afterEach(() => {
 
 function examAt(time: number, title: string, take: boolean, grade: 11 | 12 = 12) {
   vi.setSystemTime(time);
-  const created = createExam(teacher, { title, grade, paperId, durationMinutes: 30, startsAt: null, endsAt: time + 60 * MINUTE });
+  const created = createExam(teacher, { title, grade, paperId, durationMinutes: 30, startsAt: null, endsAt: time + 60 * MINUTE, answersAt: "end" });
   if (!created.ok) throw new Error(created.message);
   if (!take) return created.id;
   // học sinh vào thi lúc còn ở khối của kỳ thi đó
@@ -84,6 +84,20 @@ describe("getStudentProfile", () => {
     expect(last.stats.absent).toBe(0);
     // khối học sinh chưa từng có bài thì về khối hiện tại
     expect(getStudentProfile(teacher, student.id, 10)).toMatchObject({ ok: true, grade: 12 });
+  });
+
+  it("học sinh xem được hồ sơ của chính mình, giống hồ sơ giáo viên thấy", () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(vn(2026, 11, 11));
+    const mine = getMyProfile(student, undefined);
+    const seen = getStudentProfile(teacher, student.id, undefined);
+    if (!mine.ok || !seen.ok) throw new Error("profile");
+    expect(mine.student.id).toBe(student.id);
+    expect(mine.entries).toEqual(seen.entries);
+    expect(mine.stats).toEqual(seen.stats);
+    expect(getMyProfile(student, 11)).toMatchObject({ ok: true, grade: 11 });
+    expect(getMyProfile(teacher, undefined)).toMatchObject({ ok: false, status: 403 });
+    expect(getMyProfile({ ...student, mustChangePassword: true }, undefined)).toMatchObject({ ok: false, status: 403 });
   });
 
   it("học sinh không xem được, tài khoản không phải học sinh trả 404", () => {

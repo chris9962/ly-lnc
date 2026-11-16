@@ -38,7 +38,7 @@ afterEach(() => {
 });
 
 const exam = (extra: Partial<Parameters<typeof createExam>[1]> = {}) =>
-  createExam(teacher, { title: "Kiểm tra chương 1", grade: 12, paperId: keyedPaper, durationMinutes: 45, startsAt: null, endsAt: Date.now() + 120 * MINUTE, ...extra });
+  createExam(teacher, { title: "Kiểm tra chương 1", grade: 12, paperId: keyedPaper, durationMinutes: 45, startsAt: null, endsAt: Date.now() + 120 * MINUTE, answersAt: "end", ...extra });
 
 describe("createExam", () => {
   it("đề chưa đủ đáp án thì không tạo được kỳ thi", () => {
@@ -51,7 +51,7 @@ describe("createExam", () => {
   });
 
   it("học sinh không tạo được kỳ thi", () => {
-    expect(createExam(student, { title: "x", grade: 12, paperId: keyedPaper, durationMinutes: 10, startsAt: null, endsAt: Date.now() + MINUTE })).toMatchObject({ status: 403 });
+    expect(createExam(student, { title: "x", grade: 12, paperId: keyedPaper, durationMinutes: 10, startsAt: null, endsAt: Date.now() + MINUTE, answersAt: "end" })).toMatchObject({ status: 403 });
   });
 });
 
@@ -104,6 +104,30 @@ describe("làm bài", () => {
     expect(auditActions(begun.attemptId)).toEqual(expect.arrayContaining(["attempt.start", "attempt.answer", "attempt.submit"]));
   });
 
+  it("kỳ thi cho xem đáp án sau khi nộp thì học sinh thấy đáp án ngay, đổi lại thì phải chờ kỳ thi kết thúc", () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    const start = Date.UTC(2026, 10, 16, 1, 0);
+    at(start);
+    const input = { title: "Xem đáp án sớm", grade: 12 as const, paperId: keyedPaper, durationMinutes: 45, startsAt: null, endsAt: start + 60 * MINUTE };
+    const created = createExam(teacher, { ...input, answersAt: "submit" });
+    if (!created.ok) throw new Error(created.message);
+    const begun = startAttempt(classmate, created.id);
+    if (!begun.ok) throw new Error(begun.message);
+    expect(saveAnswer(classmate, begun.attemptId, { seq: 1, value: "D" }).ok).toBe(true);
+    // đang làm thì chưa lộ đáp án
+    expect(getAttemptView(classmate, begun.attemptId)).toMatchObject({ ok: true, review: null });
+
+    at(start + 5 * MINUTE);
+    expect(submitAttempt(classmate, begun.attemptId).ok).toBe(true);
+    const view = getAttemptView(classmate, begun.attemptId);
+    if (!view.ok) throw new Error(view.message);
+    expect(view.attempt.answersAt).toBe("submit");
+    expect(view.review?.keys[1]).toBe("D");
+
+    expect(updateExam(teacher, created.id, { ...input, answersAt: "end" })).toEqual({ ok: true });
+    expect(getAttemptView(classmate, begun.attemptId)).toMatchObject({ ok: true, review: null });
+  });
+
   it("hết giờ thì máy chủ tự nộp, giáo viên cho thi lại khi kỳ thi còn mở", () => {
     vi.useFakeTimers({ toFake: ["Date"] });
     const start = Date.UTC(2026, 10, 13, 1, 0);
@@ -150,7 +174,7 @@ describe("làm bài", () => {
     vi.useFakeTimers({ toFake: ["Date"] });
     const start = Date.UTC(2026, 10, 14, 1, 0);
     at(start);
-    const base = { title: "Gia hạn", grade: 12 as const, paperId: keyedPaper, durationMinutes: 60, startsAt: null };
+    const base = { title: "Gia hạn", grade: 12 as const, paperId: keyedPaper, durationMinutes: 60, startsAt: null, answersAt: "end" as const };
     const created = createExam(teacher, { ...base, endsAt: start + 30 * MINUTE });
     if (!created.ok) throw new Error(created.message);
     const working = startAttempt(student, created.id);
@@ -203,7 +227,7 @@ describe("quản lý kỳ thi", () => {
     if (!created.ok) throw new Error(created.message);
     const begun = startAttempt(student, created.id);
     if (!begun.ok) throw new Error(begun.message);
-    const input = { title: "Đổi tên", grade: 12 as const, paperId: blankPaper, durationMinutes: 30, startsAt: null, endsAt: Date.now() + 60 * MINUTE };
+    const input = { title: "Đổi tên", grade: 12 as const, paperId: blankPaper, durationMinutes: 30, startsAt: null, endsAt: Date.now() + 60 * MINUTE, answersAt: "end" as const };
     expect(updateExam(teacher, created.id, input)).toMatchObject({ ok: false, field: "paperId" });
     expect(updateExam(teacher, created.id, { ...input, paperId: keyedPaper }).ok).toBe(true);
     expect(deletePaper(teacher, keyedPaper)).toMatchObject({ ok: false, status: 400 });

@@ -90,7 +90,7 @@ export function createExam(user: SessionUser, input: CreateExamInput): Result<{ 
     if (!timeCheck.ok) return timeCheck;
     const row = tx
       .insert(exams)
-      .values({ title: input.title, searchTitle: searchKey(input.title), grade: input.grade, startsAt, endsAt: input.endsAt, durationMinutes: input.durationMinutes, createdBy: user.id, createdAt: now })
+      .values({ title: input.title, searchTitle: searchKey(input.title), grade: input.grade, startsAt, endsAt: input.endsAt, durationMinutes: input.durationMinutes, answersAt: input.answersAt, createdBy: user.id, createdAt: now })
       .returning({ id: exams.id })
       .get();
     tx.insert(examPapers).values({ examId: row.id, paperId: input.paperId }).run();
@@ -117,7 +117,7 @@ export function updateExam(user: SessionUser, id: number, input: CreateExamInput
     // đã bắt đầu thì giữ giờ bắt đầu cũ khi chọn "thi ngay"
     const startsAt = input.startsAt ?? Math.min(exam.startsAt, now);
     if (input.endsAt <= startsAt) return fail("Giờ kết thúc phải sau giờ bắt đầu", 400, "endTime");
-    tx.update(exams).set({ title: input.title, searchTitle: searchKey(input.title), grade: input.grade, startsAt, endsAt: input.endsAt, durationMinutes: input.durationMinutes }).where(eq(exams.id, id)).run();
+    tx.update(exams).set({ title: input.title, searchTitle: searchKey(input.title), grade: input.grade, startsAt, endsAt: input.endsAt, durationMinutes: input.durationMinutes, answersAt: input.answersAt }).where(eq(exams.id, id)).run();
     if (input.paperId !== currentPaper) tx.update(examPapers).set({ paperId: input.paperId }).where(eq(examPapers.examId, id)).run();
     // gia hạn hay rút ngắn kỳ thi thì bài đang làm phải theo giờ mới
     for (const attempt of tx.select({ id: attempts.id, startedAt: attempts.startedAt }).from(attempts).where(and(eq(attempts.examId, id), isNull(attempts.submittedAt))).all()) {

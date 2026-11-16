@@ -11,8 +11,9 @@ export default async function LoginPage() {
   const user = await currentUser();
   if (user) redirect(homePath(user));
   return (
-    <main className="flex min-h-screen items-center justify-center p-4">
-      <Card className="w-full max-w-sm">
+    <main className="relative flex min-h-screen items-center justify-center p-4">
+      <div aria-hidden="true" className="physics-band absolute inset-x-0 bottom-0" />
+      <Card className="relative w-full max-w-sm">
         <div className="mb-5 flex items-center gap-3">
           <Logo size={52} />
           <h1 className="text-lg font-bold leading-snug">{SITE_NAME}</h1>

@@ -335,7 +335,7 @@ Giai đoạn 2 và 3 đã làm xong ngày 2026-11-11:
 - Thư mục nhiều cấp, lọc theo khối và trạng thái đáp án, tìm ngay khi gõ.
 - Kỳ thi: thi ngay hoặc hẹn giờ, giao cho một khối, mỗi học sinh làm một lần. Giáo viên mở lại hoặc gia hạn được từng bài.
 - Trang làm bài: từng câu, bảng câu theo phần, đánh dấu xem lại, tự lưu từng câu, đồng hồ theo giờ máy chủ, hết giờ tự nộp.
-- Điểm hiện ngay khi nộp. Đáp án mở sau giờ kết thúc kỳ thi. Thi thử của giáo viên thấy đáp án ngay.
+- Điểm hiện ngay khi nộp. Đáp án mở sau giờ kết thúc kỳ thi. Thi thử của giáo viên thấy đáp án ngay. Từ ngày 2026-11-16 giáo viên chọn theo từng kỳ thi: đáp án mở sau khi nộp bài hoặc sau khi kỳ thi kết thúc.
 - Trang kỳ thi của giáo viên: số bài đã nộp, điểm trung bình, danh sách học sinh, tải bảng điểm Excel.
 - Chưa làm: chế độ nguyên PDF và phiếu trả lời, nhiều mã đề.
 
@@ -358,7 +358,9 @@ Giai đoạn 2 và 3 đã làm xong ngày 2026-11-11:
 | Giáo viên | Mọi giáo viên có quyền như nhau, ngân hàng đề dùng chung, không chia riêng |
 | Thi thử | Chỉ giáo viên và admin, trên đề đã có đáp án |
 | Số lần làm bài | Một lần mỗi kỳ thi. Giáo viên mở lại được cho học sinh gặp sự cố |
-| Xem kết quả | Điểm hiện ngay sau khi nộp. Đáp án hiện sau khi kỳ thi kết thúc |
+| Xem kết quả | Điểm hiện ngay sau khi nộp. Đáp án hiện sau khi nộp bài hoặc sau khi kỳ thi kết thúc, giáo viên chọn theo từng kỳ thi, mặc định là sau khi kết thúc |
+| Mật khẩu tạm | Chốt ngày 2026-11-16: mọi học sinh dùng chung mật khẩu tạm `12345678` khi tạo tài khoản và khi đặt lại mật khẩu, lần đăng nhập đầu vẫn bắt đổi. Giáo viên và admin vẫn nhận mật khẩu tạm ngẫu nhiên |
+| Trang chủ học sinh | Chốt ngày 2026-11-16: học sinh đăng nhập xong vào `/home`, cùng giao diện với trang chi tiết học sinh của giáo viên. Danh sách kỳ thi nằm ở `/my-exams` |
 | Mã đề | Hiện một mã đề mỗi kỳ thi, dữ liệu thiết kế sẵn cho nhiều mã đề (mục 3.4) |
 | Quy mô | Khoảng 200 học sinh thi cùng lúc |
 

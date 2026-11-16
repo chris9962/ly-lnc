@@ -1,0 +1,1 @@
+ALTER TABLE `exams` ADD `answers_at` text DEFAULT 'end' NOT NULL;

@@ -4,6 +4,8 @@ import { MAX_TITLE } from "./paperForm";
 import { ROSTER_SORTS } from "./rosterSort";
 
 export const MAX_DURATION = 300;
+export const ANSWERS_AT = ["submit", "end"] as const;
+export type AnswersAt = (typeof ANSWERS_AT)[number];
 // giờ Việt Nam là UTC+7 quanh năm, không đổi giờ theo mùa
 const VN_OFFSET_MS = 7 * 60 * 60 * 1000;
 
@@ -28,6 +30,7 @@ export const createExamForm = z
     paperId: z.coerce.number({ error: "Chọn đề" }).int().positive("Chọn đề"),
     duration: z.coerce.number({ error: "Nhập số phút" }).int("Nhập số phút").min(1, "Ít nhất 1 phút").max(MAX_DURATION, `Tối đa ${MAX_DURATION} phút`),
     mode: z.enum(["now", "scheduled"]),
+    answersAt: z.enum(ANSWERS_AT).default("end"),
     startDate: z.string().default(""),
     startTime: z.string().default(""),
     endDate: z.string().default(""),
@@ -40,7 +43,7 @@ export const createExamForm = z
     const endsAt = parseVnDateTime(raw.endDate, raw.endTime);
     if (endsAt === null) issue("endTime", "Nhập giờ kết thúc dạng 05/11/2026 09:00");
     else if (startsAt !== null && endsAt <= startsAt) issue("endTime", "Giờ kết thúc phải sau giờ bắt đầu");
-    return { title: raw.title, grade: raw.grade, paperId: raw.paperId, durationMinutes: raw.duration, startsAt, endsAt: endsAt ?? 0 };
+    return { title: raw.title, grade: raw.grade, paperId: raw.paperId, durationMinutes: raw.duration, startsAt, endsAt: endsAt ?? 0, answersAt: raw.answersAt };
   });
 
 export type CreateExamInput = z.infer<typeof createExamForm>;

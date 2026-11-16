@@ -1,6 +1,6 @@
 import { eq } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
-import { login } from "@/server/auth";
+import { changePassword, login } from "@/server/auth";
 import { getDb } from "@/server/db";
 import { users } from "@/server/db/schema";
 import { findSessionUser } from "@/server/session";
@@ -22,7 +22,7 @@ describe("createUsers", () => {
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     expect(result.issued.map((a) => a.username)).toEqual(["0912345678", "0912345679"]);
-    expect(result.issued.every((a) => a.password.length === 8)).toBe(true);
+    expect(result.issued.map((a) => a.password)).toEqual(["12345678", "12345678"]);
 
     const row = getDb().select().from(users).where(eq(users.username, "0912345678")).get()!;
     expect(row).toMatchObject({ role: "student", grade: 11, mustChangePassword: true, disabled: false });
@@ -62,6 +62,8 @@ describe("createUsers", () => {
       ],
     });
     expect(result.ok && result.issued.map((a) => a.username)).toEqual(["comln", "comln2"]);
+    // mật khẩu tạm chung chỉ áp cho học sinh
+    expect(result.ok && result.issued.every((a) => a.password.length === 8 && a.password !== "12345678")).toBe(true);
   });
 
   it("giáo viên không tạo được giáo viên", async () => {
@@ -111,19 +113,30 @@ describe("listUsers", () => {
 describe("resetPassword", () => {
   it("cấp mật khẩu tạm mới, bắt đổi lại và đăng xuất mọi phiên", async () => {
     const teacher = await makeUser("teacher", "Giáo Viên Bốn");
-    const student = await makeUser("student", "Học Sinh Ba");
-    const session = await login({ username: student.session.username, password: student.password }, "1.1.1.1");
+    const session = await login({ username: teacher.session.username, password: teacher.password }, "1.1.1.1");
     expect(session.ok).toBe(true);
     if (!session.ok) return;
 
-    const result = await resetPassword(teacher.session, student.session.id);
-    expect(result.ok && result.issued.password).not.toBe(student.password);
+    const result = await resetPassword(adminUser(), teacher.session.id);
+    expect(result.ok && result.issued.password).not.toBe(teacher.password);
     expect(findSessionUser(session.token)).toBeNull();
-    expect(rowOf(student.session.id)?.mustChangePassword).toBe(true);
-    expect(auditActions(student.session.id)).toContain("user.reset_password");
+    expect(rowOf(teacher.session.id)?.mustChangePassword).toBe(true);
+    expect(auditActions(teacher.session.id)).toContain("user.reset_password");
 
-    const oldLogin = await login({ username: student.session.username, password: student.password }, "1.1.1.2");
+    const oldLogin = await login({ username: teacher.session.username, password: teacher.password }, "1.1.1.2");
     expect(oldLogin.ok).toBe(false);
+  });
+
+  it("học sinh được đặt lại về mật khẩu tạm chung 12345678", async () => {
+    const teacher = await makeUser("teacher", "Giáo Viên Đặt Lại");
+    const student = await makeUser("student", "Học Sinh Ba");
+    expect((await changePassword(student.session, { current: student.password, next: "matkhaurieng1", confirm: "matkhaurieng1" })).ok).toBe(true);
+
+    const result = await resetPassword(teacher.session, student.session.id);
+    expect(result.ok && result.issued.password).toBe("12345678");
+    expect(rowOf(student.session.id)?.mustChangePassword).toBe(true);
+    expect((await login({ username: student.session.username, password: "matkhaurieng1" }, "1.1.1.5")).ok).toBe(false);
+    expect((await login({ username: student.session.username, password: "12345678" }, "1.1.1.5")).ok).toBe(true);
   });
 
   it("tài khoản ngoài phạm vi hoặc không tồn tại trả 404", async () => {

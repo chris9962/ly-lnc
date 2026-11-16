@@ -34,6 +34,16 @@ export type StudentProfile = {
 
 export function getStudentProfile(user: SessionUser, id: number, grade: number | undefined): Result<StudentProfile> {
   if (!can(user, "students.manage")) return FORBIDDEN;
+  return loadProfile(id, grade);
+}
+
+// trang chủ của học sinh: cùng dữ liệu với trang giáo viên xem, nhưng chỉ của chính tài khoản đang đăng nhập
+export function getMyProfile(user: SessionUser, grade: number | undefined): Result<StudentProfile> {
+  if (!can(user, "exams.take")) return FORBIDDEN;
+  return loadProfile(user.id, grade);
+}
+
+function loadProfile(id: number, grade: number | undefined): Result<StudentProfile> {
   const db = getDb();
   const student = Number.isInteger(id) ? db.select().from(users).where(and(eq(users.id, id), eq(users.role, "student"))).get() : undefined;
   if (!student) return NOT_FOUND;

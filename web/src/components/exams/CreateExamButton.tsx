@@ -12,7 +12,7 @@ export function CreateExamButton({ defaultGrade }: { defaultGrade?: number }) {
   // giờ gợi ý tính lúc bấm nút để luôn là giờ hiện tại, không phải giờ tải trang
   function open() {
     const start = Math.ceil(Date.now() / (15 * 60 * 1000)) * 15 * 60 * 1000;
-    setInitial({ title: "", grade: defaultGrade ?? null, paper: null, duration: 45, startsAt: start, endsAt: start + 2 * HOUR });
+    setInitial({ title: "", grade: defaultGrade ?? null, paper: null, duration: 45, answersAt: "end", startsAt: start, endsAt: start + 2 * HOUR });
   }
 
   return (

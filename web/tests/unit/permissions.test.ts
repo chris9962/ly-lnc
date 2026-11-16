@@ -50,7 +50,7 @@ describe("homePath", () => {
   it("đưa mỗi vai trò về trang chính của mình", () => {
     expect(homePath(user("admin"))).toBe("/exams");
     expect(homePath(user("teacher"))).toBe("/exams");
-    expect(homePath(user("student"))).toBe("/my-exams");
+    expect(homePath(user("student"))).toBe("/home");
   });
 
   it("đang dùng mật khẩu tạm thì về trang đổi mật khẩu", () => {

@@ -168,6 +168,15 @@ dialog::backdrop {
   background: var(--overlay);
 }
 
+/* dải hình vật lí cuối trang: tô bằng màu thương hiệu qua mask nên theo được giao diện sáng và tối */
+.physics-band {
+  height: 9rem;
+  flex: none;
+  background-color: color-mix(in srgb, var(--brand) 30%, transparent);
+  -webkit-mask: url("/physics-band.svg") repeat-x center bottom / auto 100%;
+  mask: url("/physics-band.svg") repeat-x center bottom / auto 100%;
+}
+
 @media print {
   .no-print {
     display: none !important;
