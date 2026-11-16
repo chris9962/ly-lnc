@@ -10,10 +10,11 @@ import type { MyExam } from "@/server/attempts";
 import type { ExamStatus } from "@/server/exams";
 
 // màu card theo trạng thái kỳ thi, cùng tông với nhãn trạng thái; nhãn chữ vẫn có để không chỉ dựa vào màu
+// nền hơi trong để thấy trời sao phía sau; không làm mờ nền sau card vì hiệu ứng đó làm cuộn trang bị giật
 const TONES: Record<ExamStatus, string> = {
-  running: "border-success bg-success-soft",
-  upcoming: "border-warning bg-warning-soft",
-  ended: "border-line bg-surface-alt",
+  running: "border-live bg-live-soft/80",
+  upcoming: "border-soon bg-soon-soft/80",
+  ended: "border-line bg-surface-alt/75",
 };
 
 function Score({ attempt }: { attempt: NonNullable<MyExam["attempt"]> }) {

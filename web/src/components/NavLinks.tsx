@@ -16,7 +16,7 @@ export function NavLinks({ links }: { links: { href: string; label: string }[] }
             key={link.href}
             href={link.href}
             aria-current={active ? "page" : undefined}
-            className={cx("rounded-lg px-3 py-1.5 no-underline hover:bg-surface-alt", active ? "bg-surface-alt font-semibold text-brand" : "text-ink")}
+            className={cx("rounded-lg px-3 py-1.5 no-underline transition-colors duration-150 hover:bg-surface-alt", active ? "bg-surface-alt font-semibold text-brand" : "text-ink")}
           >
             {link.label}
           </Link>

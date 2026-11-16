@@ -22,10 +22,11 @@ type Props = {
 const tip =
   "pointer-events-none invisible absolute bottom-full left-1/2 z-10 mb-1.5 w-max -translate-x-1/2 rounded-md bg-ink px-2 py-1 text-xs font-normal text-surface opacity-0 shadow-lg transition-opacity group-hover/tip:visible group-hover/tip:opacity-100 group-focus-visible/tip:visible group-focus-visible/tip:opacity-100";
 
+// large là trang làm bài: chữ trong ô nhảy nhẹ khi rê chuột, trình chỉnh đề thì đứng yên
 const choice = (on: boolean, large?: boolean) =>
   cx(
-    "inline-flex cursor-pointer items-center justify-center rounded-lg border-2 font-bold disabled:cursor-default disabled:opacity-60",
-    large ? "h-12 min-w-16 px-4 text-lg" : "h-10 min-w-11 px-3",
+    "inline-flex cursor-pointer items-center justify-center rounded-lg border-2 font-bold transition-colors duration-150 disabled:cursor-default disabled:opacity-60",
+    large ? "answer-choice h-12 min-w-16 px-4 text-lg" : "h-10 min-w-11 px-3",
     on ? "border-brand bg-brand text-on-brand" : "border-line bg-surface text-ink hover:border-brand",
   );
 
@@ -40,7 +41,7 @@ export function AnswerInput({ shape, value, onChange, format, name, disabled, la
             return (
               <span key={option} className="relative inline-flex">
                 <button type="button" role="radio" aria-checked={on} disabled={disabled} onClick={() => onChange(on ? null : option)} className={choice(on, large)}>
-                  {option}
+                  <span className="answer-choice-text inline-block">{option}</span>
                 </button>
                 {onRemoveOption && (
                   <button
@@ -98,7 +99,7 @@ export function AnswerInput({ shape, value, onChange, format, name, disabled, la
                   [FALSE, "Sai"],
                 ].map(([mark, text]) => (
                   <button key={mark} type="button" role="radio" aria-checked={cell === mark} disabled={disabled} onClick={() => set(index, cell === mark ? null : mark)} className={cx(choice(cell === mark, large), "min-w-20")}>
-                    {text}
+                    <span className="answer-choice-text inline-block">{text}</span>
                   </button>
                 ))}
               </div>

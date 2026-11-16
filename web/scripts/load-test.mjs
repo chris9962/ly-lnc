@@ -103,7 +103,7 @@ async function student(account, context, index) {
   if (!login.ok) return false;
 
   await sleep(Math.random() * START_MS);
-  await call("trang kỳ thi", "/my-exams");
+  await call("trang chủ", "/home");
   const started = await call("vào thi", `/api/exams/${context.examId}/start`, "POST");
   if (!started.ok) return false;
   const attemptId = started.json.attemptId;

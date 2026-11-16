@@ -12,9 +12,14 @@ const VARIANTS: Record<Variant, string> = {
 
 const SIZES: Record<Size, string> = { md: "min-h-10 px-4 py-2", sm: "min-h-8 px-3 py-1 text-sm" };
 
+// rê chuột thì nút nhấc nhẹ và đổ bóng, bấm thì lún xuống; nút bị khoá đứng yên, máy đặt giảm chuyển động thì chỉ đổi màu
+const MOTION =
+  "transition duration-150 ease-out not-disabled:hover:-translate-y-0.5 not-disabled:hover:shadow-md not-disabled:active:translate-y-0 not-disabled:active:scale-[0.97] not-disabled:active:shadow-none motion-reduce:transition-colors motion-reduce:not-disabled:hover:translate-y-0 motion-reduce:not-disabled:active:scale-100";
+
 export const buttonClass = (variant: Variant = "secondary", size: Size = "md", extra?: string) =>
   cx(
     "inline-flex cursor-pointer items-center justify-center gap-2 whitespace-nowrap rounded-lg border no-underline disabled:cursor-default disabled:opacity-60",
+    MOTION,
     VARIANTS[variant],
     SIZES[size],
     extra,

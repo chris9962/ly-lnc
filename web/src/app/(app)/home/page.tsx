@@ -2,7 +2,6 @@ import { notFound } from "next/navigation";
 import { RefreshAt } from "@/components/exams/AutoRefresh";
 import { StudentExamCard } from "@/components/exams/StudentExamCard";
 import { StudentProfileView } from "@/components/students/StudentProfileView";
-import { StatusTag } from "@/components/ui/StatusTag";
 import { isGrade } from "@/lib/grades";
 import { requirePage } from "@/lib/permissions";
 import { myExams } from "@/server/attempts";
@@ -19,20 +18,14 @@ export default async function HomePage({ searchParams }: Props) {
   const profile = getMyProfile(user, gradeOf((await searchParams).grade));
   const groups = myExams(user);
   if (!profile.ok || !groups.ok) notFound();
-  const { student } = profile;
   // tới giờ một kỳ thi bắt đầu hay kết thúc thì trang tự tải lại
   const changes = [...groups.upcoming.map((exam) => exam.startsAt), ...groups.running.map((exam) => exam.endsAt)];
 
   return (
     <>
       <RefreshAt at={changes.length ? Math.min(...changes) : null} />
-      <div className="mb-4">
-        <h1 className="mb-2 text-2xl font-bold">{student.fullName}</h1>
-        <div className="flex flex-wrap items-center gap-2">
-          {student.grade !== null && <StatusTag>Khối {student.grade}</StatusTag>}
-          <span className="font-mono text-sm text-muted">{student.username}</span>
-        </div>
-      </div>
+      {/* tên và tài khoản đã có ở nút góc phải, trang chỉ giữ tiêu đề cho trình đọc màn hình */}
+      <h1 className="sr-only">Trang chủ</h1>
 
       {/* kỳ thi đang mở nằm ngay đầu trang chủ để học sinh vào thi không phải tìm */}
       {groups.running.length > 0 && (
@@ -48,7 +41,21 @@ export default async function HomePage({ searchParams }: Props) {
         </section>
       )}
 
-      <StudentProfileView profile={profile} basePath="/home" />
+      {/* chưa có kỳ thi sắp tới thì ẩn cả mục, không để ô trống */}
+      {groups.upcoming.length > 0 && (
+        <section aria-labelledby="home-upcoming" className="mb-6">
+          <h2 id="home-upcoming" className="mb-3 text-lg font-bold">
+            Sắp diễn ra
+          </h2>
+          <ul className="space-y-3">
+            {groups.upcoming.map((exam) => (
+              <StudentExamCard key={exam.id} exam={exam} status="upcoming" />
+            ))}
+          </ul>
+        </section>
+      )}
+
+      <StudentProfileView profile={profile} basePath="/home" hideAbsent />
     </>
   );
 }

@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { CosmosBand, Rocket } from "@/components/CosmosBand";
 import { Logo } from "@/components/Logo";
 import { Card } from "@/components/ui/Card";
 import { currentUser, homePath } from "@/lib/permissions";
@@ -12,7 +13,8 @@ export default async function LoginPage() {
   if (user) redirect(homePath(user));
   return (
     <main className="relative flex min-h-screen items-center justify-center p-4">
-      <div aria-hidden="true" className="physics-band absolute inset-x-0 bottom-0" />
+      <CosmosBand className="absolute inset-x-0 bottom-0" />
+      <Rocket />
       <Card className="relative w-full max-w-sm">
         <div className="mb-5 flex items-center gap-3">
           <Logo size={52} />

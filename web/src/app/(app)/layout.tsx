@@ -1,5 +1,7 @@
 import { AppHeader } from "@/components/AppHeader";
+import { CosmosBand, Rocket } from "@/components/CosmosBand";
 import { requirePage } from "@/lib/permissions";
+import { skinOf } from "@/lib/theme";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   // layout chỉ dựng thanh điều hướng, mỗi trang vẫn tự kiểm quyền của mình
@@ -8,7 +10,12 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     <div className="flex min-h-dvh flex-col">
       <AppHeader user={user} />
       <main className="mx-auto w-full max-w-6xl flex-1 px-4 pb-12 pt-6">{children}</main>
-      <div aria-hidden="true" className="physics-band no-print" />
+      {skinOf(user.role) === "space" && (
+        <>
+          <CosmosBand />
+          <Rocket />
+        </>
+      )}
     </div>
   );
 }

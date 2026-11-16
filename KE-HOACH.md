@@ -360,7 +360,7 @@ Giai đoạn 2 và 3 đã làm xong ngày 2026-11-11:
 | Số lần làm bài | Một lần mỗi kỳ thi. Giáo viên mở lại được cho học sinh gặp sự cố |
 | Xem kết quả | Điểm hiện ngay sau khi nộp. Đáp án hiện sau khi nộp bài hoặc sau khi kỳ thi kết thúc, giáo viên chọn theo từng kỳ thi, mặc định là sau khi kết thúc |
 | Mật khẩu tạm | Chốt ngày 2026-11-16: mọi học sinh dùng chung mật khẩu tạm `12345678` khi tạo tài khoản và khi đặt lại mật khẩu, lần đăng nhập đầu vẫn bắt đổi. Giáo viên và admin vẫn nhận mật khẩu tạm ngẫu nhiên |
-| Trang chủ học sinh | Chốt ngày 2026-11-16: học sinh đăng nhập xong vào `/home`, cùng giao diện với trang chi tiết học sinh của giáo viên. Danh sách kỳ thi nằm ở `/my-exams` |
+| Trang chủ học sinh | Chốt ngày 2026-11-16: học sinh đăng nhập xong vào `/home`, cùng giao diện với trang chi tiết học sinh của giáo viên. Trang chủ có luôn kỳ thi đang diễn ra và sắp diễn ra, không còn trang kỳ thi riêng, `/my-exams` chuyển về `/home` |
 | Mã đề | Hiện một mã đề mỗi kỳ thi, dữ liệu thiết kế sẵn cho nhiều mã đề (mục 3.4) |
 | Quy mô | Khoảng 200 học sinh thi cùng lúc |
 

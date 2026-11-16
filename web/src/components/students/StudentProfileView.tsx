@@ -11,7 +11,8 @@ import { monthSpan, onTen } from "@/lib/yearActivity";
 import type { StudentEntry, StudentProfile } from "@/server/students";
 
 // basePath là trang đang hiện hồ sơ, dùng cho nút đổi khối; examLinks chỉ bật cho giáo viên vì học sinh không vào được trang kỳ thi
-type Props = { profile: StudentProfile; basePath: string; examLinks?: boolean };
+// hideAbsent: dòng thời gian bỏ các kỳ thi không vào thi, dùng cho trang chủ của học sinh; số đếm ở ô Chuyên cần vẫn giữ
+type Props = { profile: StudentProfile; basePath: string; examLinks?: boolean; hideAbsent?: boolean };
 
 const STATUS: Record<StudentEntry["status"], { label: string; tone: "success" | "warning" | "neutral"; dot: string }> = {
   submitted: { label: "Đã nộp", tone: "success", dot: "border-brand bg-brand" },
@@ -19,13 +20,14 @@ const STATUS: Record<StudentEntry["status"], { label: string; tone: "success" | 
   absent: { label: "Không vào thi", tone: "neutral", dot: "border-line bg-surface" },
 };
 
-export function StudentProfileView({ profile, basePath, examLinks }: Props) {
+export function StudentProfileView({ profile, basePath, examLinks, hideAbsent }: Props) {
   const { student, grade, grades, entries, stats } = profile;
   const isCurrentGrade = grade === student.grade;
 
   // một khối kéo dài qua hai năm dương lịch nên nhóm theo cả năm và tháng
   const months = new Map<string, StudentEntry[]>();
-  for (const entry of entries) {
+  const timeline = hideAbsent ? entries.filter((entry) => entry.status !== "absent") : entries;
+  for (const entry of timeline) {
     const month = entry.day.slice(0, 7);
     months.set(month, [...(months.get(month) ?? []), entry]);
   }
@@ -103,7 +105,7 @@ export function StudentProfileView({ profile, basePath, examLinks }: Props) {
 
       <Card>
         <h3 className="mb-4 font-bold">Dòng thời gian</h3>
-        {entries.length ? (
+        {timeline.length ? (
           <div className="space-y-6">
             {[...months].map(([month, list]) => (
               <section key={month} aria-label={`Tháng ${Number(month.slice(5))} năm ${month.slice(0, 4)}`} className="grid gap-x-4 gap-y-2 sm:grid-cols-[6.5rem_minmax(0,1fr)]">
@@ -149,7 +151,7 @@ export function StudentProfileView({ profile, basePath, examLinks }: Props) {
             ))}
           </div>
         ) : (
-          <p className="py-8 text-center text-muted">Chưa có kỳ thi nào ở khối {grade}</p>
+          <p className="py-8 text-center text-muted">{hideAbsent ? `Chưa làm bài nào ở khối ${grade}` : `Chưa có kỳ thi nào ở khối ${grade}`}</p>
         )}
       </Card>
     </>

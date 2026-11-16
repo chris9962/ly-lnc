@@ -241,9 +241,9 @@ test("học sinh vào thi, làm bài, nộp và thấy điểm ngay", async ({ p
   await expect(page.getByText(/Đáp án mở sau/)).toBeVisible();
 
   // chỉ được làm một lần
-  await page.goto("/my-exams");
+  await page.goto("/home");
   await expect(page.getByRole("button", { name: "Vào thi" })).toHaveCount(0);
-  await expect(page.getByRole("link", { name: "Xem bài" })).toBeVisible();
+  await expect(page.getByRole("region", { name: "Đang diễn ra" }).getByRole("link", { name: "Xem bài" })).toBeVisible();
 });
 
 test("giáo viên thấy bài đã nộp, cho học sinh thi lại và tải bảng điểm", async ({ browser }) => {

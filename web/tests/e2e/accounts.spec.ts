@@ -152,7 +152,7 @@ test("học sinh đổi mật khẩu tạm, vào trang chủ, không vào đư�
   secrets.student = newPassword("hs");
   await changePassword(page, secrets.studentTemp, secrets.student);
   await expect(page).toHaveURL(/\/home$/);
-  await expect(page.getByText("Khối 11", { exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 2, name: "Kết quả khối 11" })).toBeVisible();
 
   await page.goto("/students");
   await expect(page).toHaveURL(/\/home$/);
@@ -193,7 +193,7 @@ test("giáo viên quản lý học sinh nhưng không đụng được tới gi�
   expect(resetPassword).toHaveLength(8);
   await issuedDialog.getByRole("button", { name: "Đóng" }).click();
 
-  await studentPage.goto("/my-exams");
+  await studentPage.goto("/home");
   await expect(studentPage).toHaveURL(/\/login$/);
   await login(studentPage, AN, secrets.student);
   await expect(alert(studentPage)).toHaveText("Tên đăng nhập hoặc mật khẩu không đúng");

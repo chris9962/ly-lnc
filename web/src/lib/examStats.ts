@@ -9,3 +9,13 @@ export function scoreBands(results: { score: number; maxScore: number }[]): Scor
 }
 
 export const percent = (part: number, total: number) => (total > 0 ? Math.round((part / total) * 100) : null);
+
+export type CelebrationLevel = "good" | "great" | "perfect";
+
+// mức chúc mừng khi nộp bài: từ 6,5 là nhẹ, từ 8 là mạnh, trọn điểm thì bắn pháo hoa
+export function celebrationLevel(score: number, maxScore: number): CelebrationLevel | null {
+  if (maxScore <= 0) return null;
+  if (score >= maxScore) return "perfect";
+  const mark = onTen(score, maxScore);
+  return mark >= 8 ? "great" : mark >= 6.5 ? "good" : null;
+}

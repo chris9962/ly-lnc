@@ -7,10 +7,12 @@ import { Button } from "@/components/ui/Button";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { cx } from "@/components/ui/cx";
 import { callApi } from "@/lib/api";
+import { celebrationLevel, type CelebrationLevel } from "@/lib/examStats";
 import { isComplete, isTouched, type AnswerValue } from "@/lib/paperLayout";
 import { imageUrl, partTitle, partsOf, questionName } from "@/lib/paperView";
 import type { AttemptView } from "@/server/attempts";
 import { AnswerInput } from "./AnswerInput";
+import { Celebration } from "./Celebration";
 import { QuestionImage } from "./QuestionImage";
 
 type Status = "saved" | "saving" | "retrying";
@@ -37,6 +39,7 @@ export function ExamRunner({ view }: { view: AttemptView }) {
   const [confirm, setConfirm] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | undefined>();
+  const [celebration, setCelebration] = useState<{ level: CelebrationLevel; score: number; maxScore: number } | null>(null);
   // lệch giữa đồng hồ máy học sinh và máy chủ, đo một lần lúc mở trang
   const [offset] = useState(() => view.now - Date.now());
   const [now, setNow] = useState(view.now);
@@ -137,14 +140,18 @@ export function ExamRunner({ view }: { view: AttemptView }) {
     await flush();
     // một câu đang gửi dở hoặc đang chờ gửi lại thì đợi nó xong rồi mới nộp
     for (let tries = 0; (sending.current || queue.current.size) && tries < 24; tries++) await wait(250);
-    const result = await callApi(`/api/attempts/${attempt.id}/submit`, "POST");
+    const result = await callApi<{ score: number | null; maxScore: number }>(`/api/attempts/${attempt.id}/submit`, "POST");
     if (!result.ok) {
       setSubmitting(false);
       setSubmitError(result.message);
       return;
     }
     finished.current = true;
-    router.refresh();
+    // lời chúc mừng chỉ hiện ngay lúc nộp, mở lại bài sau này là vào thẳng trang kết quả; thi thử của giáo viên thì không chúc
+    const level = attempt.isPractice ? null : celebrationLevel(result.score ?? 0, result.maxScore);
+    if (!level) return router.refresh();
+    setConfirm(false);
+    setCelebration({ level, score: result.score ?? 0, maxScore: result.maxScore });
   }
 
   const submitRef = useRef(submit);
@@ -217,7 +224,7 @@ export function ExamRunner({ view }: { view: AttemptView }) {
   const part = partOf.get(question.seq)!;
 
   return (
-    <div className="min-h-screen bg-bg">
+    <div className="min-h-screen">
       <header className="sticky top-0 z-20 border-b border-line bg-surface">
         <div className="mx-auto flex max-w-6xl items-center gap-3 px-4 py-2">
           <div className="min-w-0 flex-1">
@@ -371,6 +378,7 @@ export function ExamRunner({ view }: { view: AttemptView }) {
         onConfirm={submit}
         onClose={() => setConfirm(false)}
       />
+      {celebration && <Celebration {...celebration} onClose={() => router.refresh()} />}
     </div>
   );
 }
